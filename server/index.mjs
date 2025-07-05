@@ -1,8 +1,13 @@
 // server/index.js
-const express = require("express");
-const mongoose = require("mongoose");
-const dotenv = require("dotenv");
-const cors = require("cors");
+import express from "express";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import cors from "cors";
+
+import storyRoutes from "./routes/story.routes.mjs";
+import aiRoutes from "./routes/ai.routes.mjs";
+import projectRoutes from "./routes/projects.routes.mjs";
+
 
 dotenv.config();
 const app = express();
@@ -10,11 +15,11 @@ app.use(express.json());
 app.use(cors());
 
 // Load routes
-const storyRoutes = require("./routes/story.routes");
 app.use("/api/stories", storyRoutes);
 
-const aiRoutes = require("./routes/ai.routes");
 app.use("/api/ai", aiRoutes);
+
+app.use("/api/projects", projectRoutes);
 
 
 // MongoDB Connection

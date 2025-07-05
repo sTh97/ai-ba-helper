@@ -1,4 +1,4 @@
-exports.enhanceStory = async (req, res) => {
+export const enhanceStory = async (req, res) => {
   const { originalText } = req.body;
 
   // Simulate GPT response for development
@@ -21,3 +21,5 @@ exports.enhanceStory = async (req, res) => {
 
   res.json(mockResponse);
 };
+
+// export default enhanceStory;

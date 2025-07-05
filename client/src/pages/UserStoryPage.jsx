@@ -97,7 +97,7 @@ const handleEditStory = (story) => {
     // <MainLayout>
       <div className="max-w-3xl mx-auto">
         <div className="max-w-3xl mx-auto p-6 bg-white rounded shadow mt-10">
-      <h1 className="text-2xl font-bold mb-4 text-gray-800">📘 User Story Manager</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-800">User Story Manager</h1>
 
       <textarea
         className="w-full border p-3 rounded mb-3 focus:outline-blue-500"

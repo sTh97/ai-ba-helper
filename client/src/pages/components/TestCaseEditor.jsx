@@ -31,7 +31,7 @@ const TestCaseEditor = ({
 
   return (
     <div className="bg-gray-100 border-l-4 border-blue-500 p-4 mt-6 rounded">
-      <h3 className="text-lg font-semibold text-blue-700 mb-4">🤖 AI Enhancement (Editable)</h3>
+      <h3 className="text-lg font-semibold text-blue-700 mb-4">Enhance with AI</h3>
 
       <div className="mb-4">
         <label className="font-medium text-gray-700">Corrected Story:</label>

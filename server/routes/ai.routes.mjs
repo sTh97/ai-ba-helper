@@ -1,14 +1,14 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const aiController = require("../controllers/ai.controller");
 
-router.post("/enhance", aiController.enhanceStory);
+import { enhanceStory } from "../controllers/ai.controller.mjs"; // ✅ named import
+
+router.post("/enhance", enhanceStory);
 
 router.post("/generate-ui", async (req, res) => {
   const { correctedText, acceptanceCriteria } = req.body;
 
-  // In future: Use OpenAI or another model here
-  // For now: Return hardcoded JSX string and metadata
+  // Simulated JSX response
   const sampleJSX = `
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Upload Resume</h2>
@@ -26,4 +26,4 @@ router.post("/generate-ui", async (req, res) => {
   });
 });
 
-module.exports = router;
+export default router;

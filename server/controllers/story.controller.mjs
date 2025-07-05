@@ -1,7 +1,8 @@
-// server/controllers/story.controller.js
-const Story = require("../models/story.model");
+// server/controllers/story.controller.mjs
+import mongoose from "mongoose";
+import Story from "../models/story.model.mjs";
 
-exports.createStory = async (req, res) => {
+export const createStory = async (req, res) => {
   try {
     const {
       originalText,
@@ -27,8 +28,7 @@ exports.createStory = async (req, res) => {
   }
 };
 
-
-exports.getAllStories = async (req, res) => {
+export const getAllStories = async (req, res) => {
   try {
     const stories = await Story.find().sort({ createdAt: -1 });
     res.json(stories);
@@ -37,7 +37,7 @@ exports.getAllStories = async (req, res) => {
   }
 };
 
-exports.getStoryById = async (req, res) => {
+export const getStoryById = async (req, res) => {
   try {
     const story = await Story.findById(req.params.id);
     res.json(story);
@@ -46,7 +46,7 @@ exports.getStoryById = async (req, res) => {
   }
 };
 
-exports.updateStory = async (req, res) => {
+export const updateStory = async (req, res) => {
   try {
     const story = await Story.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -57,7 +57,7 @@ exports.updateStory = async (req, res) => {
   }
 };
 
-exports.deleteStory = async (req, res) => {
+export const deleteStory = async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -76,7 +76,7 @@ exports.deleteStory = async (req, res) => {
   }
 };
 
-exports.enhanceStoryWithAI = async (req, res) => {
+export const enhanceStoryWithAI = async (req, res) => {
   const { storyId, correctedText, acceptanceCriteria, happyTests, negativeTests } = req.body;
 
   try {
@@ -97,5 +97,3 @@ exports.enhanceStoryWithAI = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
-

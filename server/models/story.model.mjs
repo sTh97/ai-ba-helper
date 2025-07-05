@@ -1,6 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const storySchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true },
   originalText: { type: String, required: true },
   correctedText: { type: String },
   acceptanceCriteria: [String],
@@ -13,4 +14,4 @@ const storySchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-module.exports = mongoose.model("Story", storySchema);
+export default mongoose.model("Story", storySchema);

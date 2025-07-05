@@ -13,7 +13,7 @@ const MainLayout = () => {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="bg-blue-800 text-white py-3 px-6 shadow-md">
-        <h1 className="text-xl font-bold">📘 BA Tool</h1>
+        <h1 className="text-xl font-bold">Business Analysis Tool</h1>
       </header>
 
       <div className="flex flex-1">
