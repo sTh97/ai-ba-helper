@@ -35,7 +35,7 @@ const MainLayout = () => {
 
       {/* Footer */}
       <footer className="bg-gray-200 text-center py-2 text-sm text-gray-700">
-        Model by Taimoor @ 7/6/2025 | Today Time: {currentTime.toLocaleString()}
+        Model by Taimoor @ 7/5/2025 | Today Time: {currentTime.toLocaleString()}
       </footer>
     </div>
   );
