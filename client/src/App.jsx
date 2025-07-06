@@ -1,17 +1,3 @@
-// src/App.jsx
-// import UserStoryPage from "./pages/UserStoryPage";
-
-// function App() {
-//   return (
-//     <div className="min-h-screen bg-gray-100">
-//       <UserStoryPage />
-//     </div>
-//   );
-// }
-
-// export default App;
-
-// src/App.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import UserStoryPage from "./pages/UserStoryPage";
 import Dashboard from "./pages/Dashboard";

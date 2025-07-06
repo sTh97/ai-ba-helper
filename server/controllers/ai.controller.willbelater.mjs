@@ -1,46 +1,25 @@
-// server/controllers/ai.controller.js
-const { OpenAI } = require("openai");
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-exports.enhanceStory = async (req, res) => {
+export const enhanceStory = async (req, res) => {
   const { originalText } = req.body;
 
-  try {
-    const prompt = `
-You are a Business Analyst assistant. Given the user story below:
+  // Simulate GPT response for development
+  const mockResponse = {
+    correctedText: originalText.replace("uploader", "upload") + " (corrected)",
+    acceptanceCriteria: [
+      "User must be able to upload a resume in PDF or DOC format.",
+      "The upload should complete within 10 seconds.",
+      "A success message should appear after upload.",
+    ],
+    happyTests: [
+      "User uploads a valid PDF resume and sees success message.",
+      "User uploads a DOC file and the system stores it correctly.",
+    ],
+    negativeTests: [
+      "User tries to upload an unsupported file type (e.g., .exe).",
+      "User uploads a file larger than 5MB.",
+    ],
+  };
 
-"${originalText}"
-
-1. Correct the vocabulary and grammar.
-2. Generate all possible clear acceptance criteria.
-3. Provide all possible happy path test cases and negative test cases.
-
-Respond in this JSON format:
-{
-  "correctedText": "...",
-  "acceptanceCriteria": ["...", "..."],
-  "happyTests": ["...", "..."],
-  "negativeTests": ["...", "..."]
-}
-`;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const raw = completion.choices[0].message.content;
-
-    let parsed = {};
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return res.status(400).json({ error: "AI response could not be parsed", raw });
-    }
-
-    res.json(parsed);
-  } catch (err) {
-    console.error("AI error:", err);
-    res.status(500).json({ error: err.message });
-  }
+  res.json(mockResponse);
 };
+
+// export default enhanceStory;
