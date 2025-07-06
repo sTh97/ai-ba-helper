@@ -65,17 +65,38 @@ const AddProject = () => {
         {projects.length === 0 ? (
           <p className="text-gray-500">No projects found.</p>
         ) : (
-          <ul className="space-y-4">
-            {projects.map((project) => (
-              <li key={project._id} className="border p-4 rounded bg-gray-50">
-                <h3 className="text-lg font-semibold">{project.name}</h3>
-                <p className="text-sm text-gray-600">{project.description}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Created: {new Date(project.createdAt).toLocaleString()}
-                </p>
-              </li>
-            ))}
-          </ul>
+          // <ul className="space-y-4">
+          //   {projects.map((project) => (
+          //     <li key={project._id} className="border p-4 rounded bg-gray-50">
+          //       <h3 className="text-lg font-semibold">{project.name}</h3>
+          //       <p className="text-sm text-gray-600">{project.description}</p>
+          //       <p className="text-xs text-gray-500 mt-1">
+          //         Created: {new Date(project.createdAt).toLocaleString()}
+          //       </p>
+          //     </li>
+          //   ))}
+          // </ul>
+          <table className="table-auto w-full border text-sm">
+  <thead>
+    <tr className="bg-gray-200 text-left">
+      <th className="border px-4 py-2">S.No</th>
+      <th className="border px-4 py-2">Project Name</th>
+      <th className="border px-4 py-2">Description</th>
+      <th className="border px-4 py-2">Created At</th>
+    </tr>
+  </thead>
+  <tbody>
+    {projects.map((project, index) => (
+      <tr key={project._id} className="bg-white hover:bg-gray-50">
+        <td className="border px-4 py-2 text-center">{index + 1}</td>
+        <td className="border px-4 py-2">{project.name}</td>
+        <td className="border px-4 py-2">{project.description}</td>
+        <td className="border px-4 py-2">{new Date(project.createdAt).toLocaleString()}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
         )}
       </div>
     </div>
