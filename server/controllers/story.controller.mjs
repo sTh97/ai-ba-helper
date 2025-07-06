@@ -11,6 +11,7 @@ export const createStory = async (req, res) => {
       happyTests,
       negativeTests,
       status,
+      projectId,
     } = req.body;
 
     const story = await Story.create({
@@ -20,6 +21,7 @@ export const createStory = async (req, res) => {
       happyTests,
       negativeTests,
       status: status || "draft",
+      projectId,
     });
 
     res.status(201).json(story);
@@ -30,7 +32,7 @@ export const createStory = async (req, res) => {
 
 export const getAllStories = async (req, res) => {
   try {
-    const stories = await Story.find().sort({ createdAt: -1 });
+    const stories = await Story.find().populate("projectId", "name").sort({ createdAt: -1 });
     res.json(stories);
   } catch (err) {
     res.status(500).json({ error: err.message });
