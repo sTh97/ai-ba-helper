@@ -5,21 +5,34 @@ export const enhanceStory = async (req, res) => {
 
   try {
     const prompt = `
-You are a Business Analyst assistant. Given the user story below:
+You are an AI assistant helping a Business Analyst.
+
+Given the following user story:
 
 "${originalText}"
 
+Perform the following tasks:
 1. Correct the vocabulary and grammar.
-2. Generate all possible clear acceptance criteria.
-3. Provide all possible happy path test cases and negative test cases.
+2. Generate all possible acceptance criteria (as simple strings).
+3. Generate all possible happy path test cases (as simple strings).
+4. Generate all possible negative test cases (as simple strings).
 
-Respond in this JSON format:
+⚠️ VERY IMPORTANT – Your entire output MUST be ONLY a valid JSON object. DO NOT return tables, headings, or markdown.
+
+The format must be exactly:
+
 {
-  "correctedText": "...",
-  "acceptanceCriteria": ["...", "..."],
-  "happyTests": ["...", "..."],
-  "negativeTests": ["...", "..."]
+  "correctedText": "string",
+  "acceptanceCriteria": ["string", "string", "..."],
+  "happyTests": ["string", "string", "..."],
+  "negativeTests": ["string", "string", "..."]
 }
+
+Do NOT include headings like "Acceptance Criteria:", "Happy Test Cases:", etc.
+
+Do NOT use markdown or code blocks.
+
+Return ONLY this JSON. Anything else will break the system.
 `;
 
     const response = await axios.post(
