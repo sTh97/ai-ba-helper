@@ -7,6 +7,8 @@ import cors from "cors";
 import storyRoutes from "./routes/story.routes.mjs";
 import aiRoutes from "./routes/ai.routes.mjs";
 import projectRoutes from "./routes/projects.routes.mjs";
+import dashboardRoutes from "./routes/dashboard.routes.mjs";
+
 
 
 dotenv.config();
@@ -21,6 +23,7 @@ app.use("/api/ai", aiRoutes);
 
 app.use("/api/projects", projectRoutes);
 
+app.use("/api/dashboard", dashboardRoutes);
 
 // MongoDB Connection
 

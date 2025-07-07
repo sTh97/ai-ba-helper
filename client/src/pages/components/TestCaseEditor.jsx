@@ -83,10 +83,10 @@ const TestCaseEditor = ({
           </thead>
          <tbody>
   {[...aiResult.happyTests || [], ...aiResult.negativeTests || []].map((test, index) => (
-    <tr key={`${index}-${test}`}>
-      <td className="border px-2 py-1 text-center">{index + 1}</td>
+    <tr key={`${index}`}>
+      <td className="border px-2 py-1text-center">{index + 1}</td>
       <td className="border px-2 py-1">
-        <input
+        <textarea
           className="w-full border px-2 py-1"
           value={test}
           onChange={(e) => {

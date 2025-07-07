@@ -48,6 +48,28 @@ export const getStoryById = async (req, res) => {
   }
 };
 
+// server/controllers/story.controller.js
+
+export const getStoriesByProjectName = async (req, res) => {
+  const { name } = req.query;
+
+  try {
+    const stories = await Story.find()
+      .populate("projectId", "name") // Only bring project name
+      .exec();
+
+    const filteredStories = stories.filter(story =>
+      story.projectId?.name?.toLowerCase().includes(name.toLowerCase())
+    );
+
+    res.json(filteredStories);
+  } catch (err) {
+    console.error("Error fetching stories by project name:", err);
+    res.status(500).json({ error: "Failed to fetch stories" });
+  }
+};
+
+
 export const updateStory = async (req, res) => {
   try {
     const story = await Story.findByIdAndUpdate(req.params.id, req.body, {

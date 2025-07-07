@@ -75,7 +75,8 @@ router.post("/generate-ui", async (req, res) => {
     const prompt = `
 You are a professional frontend UI engineer.
 
-Based on the following user story and its acceptance criteria, generate a clean, responsive, and functional React JSX component using Tailwind CSS.
+Based on the following user story and its acceptance criteria, generate a clean, responsive, and functional UI.
+Using HTML, CSS and Javascript generate a complete code which I can also run on any IDE. 
 
 - User Story: "${correctedText}"
 - Acceptance Criteria: ${JSON.stringify(acceptanceCriteria, null, 2)}
