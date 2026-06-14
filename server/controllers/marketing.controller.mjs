@@ -1,7 +1,7 @@
 import Project from "../models/projects.mjs";
 import Story from "../models/story.model.mjs";
 import MarketingCollateral from "../models/marketingCollateral.model.mjs";
-import { callAI, getErrorMessage, getStructureAIOptions } from "./ai.controller.mjs";
+import { callAI, getErrorMessage, getDocumentAIOptions, getRefineAIOptions } from "./ai.controller.mjs";
 import { parseAIJson } from "../utils/aiParser.mjs";
 import {
   buildCollateralPreviewHtml,
@@ -129,7 +129,7 @@ ${draftPrompt.trim()}
 
 Refine this into a comprehensive, actionable marketing brief that another AI can follow to write the collateral.`;
 
-    const refined = await callAI(systemPrompt, userPrompt, false, getStructureAIOptions({ maxTokens: 2048 }));
+    const refined = await callAI(systemPrompt, userPrompt, false, getRefineAIOptions(req.aiSelection));
 
     res.json({ refinedPrompt: refined.trim(), draftPrompt: draftPrompt.trim() });
   } catch (err) {
@@ -138,7 +138,7 @@ Refine this into a comprehensive, actionable marketing brief that another AI can
   }
 };
 
-const generateContent = async (project, stories, prompt, collateralType, format) => {
+const generateContent = async (project, stories, prompt, collateralType, format, aiSelection) => {
   const systemPrompt = `You are an award-winning product marketing copywriter.
 You write compelling, benefit-driven marketing collateral grounded in a product's real capabilities.
 Return ONLY valid JSON — no markdown, no code fences.`;
@@ -184,7 +184,7 @@ Rules:
     const prompt2 = attempt === 0
       ? userPrompt
       : `${userPrompt}\n\nYour previous response was invalid JSON (${lastError}). Return ONLY valid JSON.`;
-    lastRaw = await callAI(systemPrompt, prompt2, true, getStructureAIOptions({ maxTokens: 4000 }));
+    lastRaw = await callAI(systemPrompt, prompt2, true, getDocumentAIOptions(aiSelection, { maxTokens: 6000 }));
     try {
       const parsed = parseAIJson(lastRaw);
       const content = parsed.content || parsed;
@@ -219,7 +219,7 @@ export const generateMarketingCollateral = async (req, res) => {
       return res.status(400).json({ error: "Select at least one user story to generate collateral" });
     }
 
-    const content = await generateContent(project, stories, prompt, collateralType, format);
+    const content = await generateContent(project, stories, prompt, collateralType, format, req.aiSelection);
 
     res.json({
       projectId,

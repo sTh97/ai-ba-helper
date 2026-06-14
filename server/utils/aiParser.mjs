@@ -14,6 +14,51 @@ const repairJsonText = (text) =>
     .replace(/\u201c|\u201d/g, '"')
     .replace(/\u2018|\u2019/g, "'");
 
+const repairTruncatedJson = (text) => {
+  let repaired = repairJsonText(text.trim());
+
+  // Drop a trailing incomplete property (e.g. cut off mid-string key or value)
+  repaired = repaired.replace(/,\s*"[^"]*":\s*"[^"]*$/s, "");
+  repaired = repaired.replace(/,\s*"[^"]*":\s*[^",\]}]*$/s, "");
+  repaired = repaired.replace(/,\s*"[^"]*"\s*:\s*$/s, "");
+  repaired = repaired.replace(/,\s*$/s, "");
+
+  const stack = [];
+  let inString = false;
+  let escape = false;
+
+  for (let i = 0; i < repaired.length; i += 1) {
+    const char = repaired[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (char === "\\" && inString) {
+      escape = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (char === "{") stack.push("}");
+    else if (char === "[") stack.push("]");
+    else if (char === "}" || char === "]") stack.pop();
+  }
+
+  while (inString) {
+    repaired += '"';
+    inString = false;
+  }
+
+  while (stack.length > 0) {
+    repaired += stack.pop();
+  }
+
+  return repaired;
+};
+
 const tryParseJson = (text) => {
   try {
     return JSON.parse(text);
@@ -21,7 +66,11 @@ const tryParseJson = (text) => {
     try {
       return JSON.parse(repairJsonText(text));
     } catch {
-      throw firstError;
+      try {
+        return JSON.parse(repairTruncatedJson(text));
+      } catch {
+        throw firstError;
+      }
     }
   }
 };

@@ -6,6 +6,7 @@ import PageHeader from "../components/PageHeader";
 import Badge from "../components/Badge";
 import EmptyState from "../components/EmptyState";
 import ConfirmButton from "../components/ConfirmButton";
+import LlmAssignPicker from "../components/LlmAssignPicker";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -31,6 +32,9 @@ const ShieldIcon = () => (
 const countPerms = (perms = []) =>
   perms.reduce((acc, p) => acc + ["create", "read", "update", "delete"].filter((a) => p[a]).length, 0);
 
+const llmSummary = (allowedLlms = []) =>
+  allowedLlms.length === 0 ? "All models" : `${allowedLlms.length} model${allowedLlms.length === 1 ? "" : "s"}`;
+
 const Roles = () => {
   const { hasPermission } = useAuth();
   const { showToast } = useToast();
@@ -39,6 +43,8 @@ const Roles = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [permissions, setPermissions] = useState([]);
+  const [allowedLlms, setAllowedLlms] = useState([]);
+  const [llmCatalog, setLlmCatalog] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -50,12 +56,14 @@ const Roles = () => {
 
   const fetchData = async () => {
     try {
-      const [modRes, rolesRes] = await Promise.all([
+      const [modRes, rolesRes, modelsRes] = await Promise.all([
         axios.get("/roles/modules"),
         axios.get("/roles"),
+        axios.get("/roles/llm-catalog"),
       ]);
       setModules(modRes.data);
       setRoles(rolesRes.data);
+      setLlmCatalog(modelsRes.data?.models || []);
       if (!editingId && permissions.length === 0) {
         setPermissions(initPermissions(modRes.data));
       }
@@ -87,6 +95,7 @@ const Roles = () => {
       return existing || emptyPermission(m.key);
     });
     setPermissions(merged);
+    setAllowedLlms(role.allowedLlms || []);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -95,13 +104,14 @@ const Roles = () => {
     setName("");
     setDescription("");
     setPermissions(initPermissions(modules));
+    setAllowedLlms([]);
   };
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      const payload = { name, description, permissions };
+      const payload = { name, description, permissions, allowedLlms };
       if (editingId) {
         await axios.put(`/roles/${editingId}`, payload);
         showToast("Role updated successfully");
@@ -141,7 +151,7 @@ const Roles = () => {
     <div className="ba-page" style={{ maxWidth: 960, margin: "0 auto" }}>
       <PageHeader
         title="Role Management"
-        subtitle="Define roles with module-level CRUD permissions and data access scope"
+        subtitle="Define roles with module permissions, data access scope, and allowed AI models"
       />
 
       {(canCreate || (canUpdate && editingId)) && (
@@ -198,6 +208,16 @@ const Roles = () => {
             </table>
           </div>
 
+          <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
+            <LlmAssignPicker
+              models={llmCatalog}
+              selectedIds={allowedLlms}
+              onChange={setAllowedLlms}
+              emptyLabel="All configured models are available to users with this role"
+              hint="Leave none selected to allow every configured model. Users inherit these models unless overridden on their profile."
+            />
+          </div>
+
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
             <button
               onClick={handleSubmit}
@@ -251,7 +271,7 @@ const Roles = () => {
                       {role.name}
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                      {countPerms(role.permissions)} permissions
+                      {countPerms(role.permissions)} permissions · {llmSummary(role.allowedLlms)}
                     </div>
                   </div>
                   <Badge color={role.isSystem ? "accent" : "purple"}>

@@ -5,6 +5,7 @@ import "./index.css";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { LLMProvider } from "./context/LLMContext";
 import { ToastProvider } from "./components/Toast";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -13,7 +14,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
-            <App />
+            <LLMProvider>
+              <App />
+            </LLMProvider>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

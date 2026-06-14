@@ -2,6 +2,8 @@ import Role from "../models/role.model.mjs";
 import User from "../models/user.model.mjs";
 import { MODULES } from "../constants/modules.mjs";
 import { buildOwnerFilter } from "../utils/permissions.mjs";
+import { validateAllowedLlms } from "../utils/llmAccess.mjs";
+import { listAvailableModels } from "../constants/llmCatalog.mjs";
 
 const validatePermissions = (permissions) => {
   if (!Array.isArray(permissions)) {
@@ -18,6 +20,10 @@ const validatePermissions = (permissions) => {
 
 export const getModules = async (_req, res) => {
   res.json(MODULES);
+};
+
+export const getLlmCatalog = async (_req, res) => {
+  res.json(listAvailableModels());
 };
 
 export const getAllRoles = async (req, res) => {
@@ -45,13 +51,14 @@ export const getRoleById = async (req, res) => {
 
 export const createRole = async (req, res) => {
   try {
-    const { name, description, permissions } = req.body;
+    const { name, description, permissions, allowedLlms } = req.body;
 
     if (!name?.trim()) {
       return res.status(400).json({ error: "Role name is required" });
     }
 
     validatePermissions(permissions);
+    const normalizedLlms = validateAllowedLlms(allowedLlms);
 
     const existing = await Role.findOne({ name: name.trim() });
     if (existing) {
@@ -62,6 +69,7 @@ export const createRole = async (req, res) => {
       name: name.trim(),
       description: description?.trim() || "",
       permissions: permissions || [],
+      allowedLlms: normalizedLlms,
       createdBy: req.user._id,
     });
 
@@ -73,7 +81,7 @@ export const createRole = async (req, res) => {
 
 export const updateRole = async (req, res) => {
   try {
-    const { name, description, permissions } = req.body;
+    const { name, description, permissions, allowedLlms } = req.body;
     const role = await Role.findById(req.params.id);
 
     if (!role) return res.status(404).json({ error: "Role not found" });
@@ -82,6 +90,8 @@ export const updateRole = async (req, res) => {
     }
 
     if (permissions) validatePermissions(permissions);
+    let normalizedLlms;
+    if (allowedLlms !== undefined) normalizedLlms = validateAllowedLlms(allowedLlms);
 
     if (name?.trim() && name.trim() !== role.name) {
       const existing = await Role.findOne({ name: name.trim() });
@@ -93,6 +103,7 @@ export const updateRole = async (req, res) => {
 
     if (description !== undefined) role.description = description?.trim() || "";
     if (permissions) role.permissions = permissions;
+    if (allowedLlms !== undefined) role.allowedLlms = normalizedLlms;
 
     await role.save();
     res.json(role);

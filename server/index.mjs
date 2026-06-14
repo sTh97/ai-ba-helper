@@ -19,7 +19,9 @@ import { markStaleJobsFailed } from "./services/prototypeJobRunner.mjs";
 dotenv.config();
 const app = express();
 app.use(express.json({ limit: "15mb" }));
-app.use(cors());
+app.use(cors({
+  allowedHeaders: ["Content-Type", "Authorization", "X-AI-Selection"],
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);

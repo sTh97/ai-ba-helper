@@ -2,7 +2,7 @@ import Project from "../models/projects.mjs";
 import Story from "../models/story.model.mjs";
 import ApplicationPrototype from "../models/prototype.model.mjs";
 import PrototypeJob from "../models/prototypeJob.model.mjs";
-import { callAI, getErrorMessage, getStructureAIOptions } from "./ai.controller.mjs";
+import { callAI, getErrorMessage, getRefineAIOptions } from "./ai.controller.mjs";
 import { startGenerateJob, startMergeJob, startUpdateJob } from "../services/prototypeJobRunner.mjs";
 import { normalizeSavedPrototype } from "../utils/prototypeBuilder.mjs";
 import {
@@ -125,7 +125,7 @@ Refine into a comprehensive, actionable prototype brief. Be specific about:
 4. Domain-specific controls per screen (filters, steppers, KPI cards, approval workflows, etc.)
 5. Visual style: Inter font, #2563eb primary, generous whitespace, subtle shadows — NOT gray placeholder boxes`;
 
-    const refined = await callAI(systemPrompt, userPrompt, false, getStructureAIOptions({ maxTokens: 2048 }));
+    const refined = await callAI(systemPrompt, userPrompt, false, getRefineAIOptions(req.aiSelection));
 
     res.json({
       refinedPrompt: refined.trim(),
@@ -205,6 +205,7 @@ export const generatePrototype = async (req, res) => {
       storyIds: stories.map((s) => s._id),
       prototypePrompt: prototypePrompt?.trim() || "",
       customName: customName?.trim() || "",
+      aiSelection: req.aiSelection || undefined,
       progress: { phase: "queued", message: "Queued for generation", percent: 0 },
     });
 
@@ -288,6 +289,7 @@ export const updatePrototypeApplication = async (req, res) => {
       sourceSnapshot,
       updatePrompt: updatePrompt.trim(),
       customName: name?.trim() || sourceSnapshot.name || "",
+      aiSelection: req.aiSelection || undefined,
       progress: { phase: "queued", message: "Queued for update", percent: 0 },
     });
 
@@ -341,6 +343,7 @@ export const mergePrototypes = async (req, res) => {
       prototypeIds,
       mergePrompt: mergePrompt?.trim() || "",
       customName: name?.trim() || "",
+      aiSelection: req.aiSelection || undefined,
       progress: { phase: "queued", message: "Queued for merge", percent: 0 },
     });
 

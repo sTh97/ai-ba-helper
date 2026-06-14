@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getModules,
+  getLlmCatalog,
   getAllRoles,
   getRoleById,
   createRole,
@@ -14,6 +15,7 @@ const router = express.Router();
 router.use(authenticate);
 
 router.get("/modules", authorize("roles", "read"), getModules);
+router.get("/llm-catalog", authorize("roles", "read"), getLlmCatalog);
 router.get("/", authorize("roles", "read"), getAllRoles);
 router.get("/:id", authorize("roles", "read"), getRoleById);
 router.post("/", authorize("roles", "create"), createRole);

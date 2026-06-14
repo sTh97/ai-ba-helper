@@ -42,6 +42,13 @@ const prototypeJobSchema = new mongoose.Schema({
   mergePrompt: { type: String, trim: true },
   updatePrompt: { type: String, trim: true },
   customName: { type: String, trim: true },
+  aiSelection: {
+    id: String,
+    provider: String,
+    models: [String],
+    label: String,
+    tier: String,
+  },
   progress: {
     phase: { type: String, default: "queued" },
     currentChunk: { type: Number, default: 0 },

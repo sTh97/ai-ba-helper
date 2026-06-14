@@ -1,0 +1,4275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATM Monitoring</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-body, Inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #1a2332; color: var(--color-text, #111827); -webkit-font-smoothing: antialiased; }
+.screen { background: var(--color-surface, #fff); border-radius: var(--radius-lg, 16px); padding: 28px; }
+.screen-header h2 { margin: 0 0 8px; font-size: 22px; }
+.screen-header p { margin: 0 0 20px; color: var(--color-text-muted, #6b7280); line-height: 1.5; }
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.feature-card { background: var(--color-surface-muted, #f9fafb); border: 1px solid var(--color-border, #e5e7eb); border-radius: var(--radius-md, 10px); padding: 12px; font-size: 13px; line-height: 1.45; }
+.feature-card.muted { color: var(--color-text-muted, #6b7280); }
+.mapped-stories h3 { margin: 0 0 8px; font-size: 14px; }
+.mapped-stories ul { margin: 0; padding-left: 18px; color: #374151; font-size: 13px; line-height: 1.5; }
+
+.proto-bar { background: #0f172a; color: #e2e8f0; border-bottom: 1px solid #1e293b; position: sticky; top: 0; z-index: 100; }
+.proto-bar-inner { max-width: 1400px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.proto-brand { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #94a3b8; }
+.proto-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.25); }
+.role-switcher { display: flex; gap: 4px; background: #1e293b; padding: 4px; border-radius: 10px; }
+.role-btn { border: 0; background: transparent; color: #94a3b8; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.role-btn:hover { color: #fff; }
+.role-btn.active { background: #2563eb; color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,0.35); }
+
+.shell { display: none; flex: 1; flex-direction: column; min-height: calc(100vh - 49px); }
+.shell.active { display: flex; }
+.shell-public.active { display: block; }
+
+/* Customer storefront shell */
+.shell-customer { background: #fff; }
+.store-topbar { background: #fff; border-bottom: 1px solid var(--color-border, #e5e7eb); position: sticky; top: 49px; z-index: 50; }
+.topbar-inner { max-width: 1280px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+.topbar-left { display: flex; align-items: center; gap: 32px; }
+.store-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; color: #111827; }
+.topnav { display: flex; gap: 4px; }
+.topnav-link { border: 0; background: transparent; padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #4b5563; cursor: pointer; transition: all 0.15s; }
+.topnav-link:hover { background: #f3f4f6; color: #111827; }
+.topnav-link.active { background: #eff6ff; color: #2563eb; font-weight: 600; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.icon-btn { border: 0; background: #f9fafb; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #374151; position: relative; transition: background 0.15s; }
+.icon-btn:hover { background: #f3f4f6; }
+.cart-badge { position: absolute; top: 4px; right: 4px; background: #2563eb; color: #fff; font-size: 10px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+.customer-viewport { flex: 1; background: #f8fafc; padding: 24px; max-width: 1280px; width: 100%; margin: 0 auto; }
+.shell-customer .screen { border-radius: 16px; border: 1px solid #e5e7eb; box-shadow: 0 4px 20px rgba(15,23,42,0.06); }
+
+/* Admin shell */
+.shell-admin { flex-direction: row; background: #f1f5f9; }
+.admin-sidebar { width: 260px; background: #fff; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; flex-shrink: 0; }
+.admin-brand { padding: 24px 20px 16px; border-bottom: 1px solid #f3f4f6; }
+.admin-badge { display: inline-block; background: #7c3aed; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.admin-brand-name { font-size: 16px; font-weight: 800; color: #111827; }
+.admin-nav { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.admin-nav-btn { border: 0; background: transparent; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; color: #4b5563; cursor: pointer; text-align: left; transition: all 0.15s; width: 100%; }
+.admin-nav-btn:hover { background: #f9fafb; color: #111827; }
+.admin-nav-btn.active { background: #f5f3ff; color: #7c3aed; font-weight: 600; }
+.admin-nav-icon { display: flex; opacity: 0.7; }
+.admin-nav-btn.active .admin-nav-icon { opacity: 1; }
+.admin-sidebar-footer { padding: 16px; border-top: 1px solid #f3f4f6; }
+.admin-user { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.admin-avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.admin-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.admin-topbar { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+.admin-topbar-title { font-size: 18px; font-weight: 700; }
+.admin-viewport { flex: 1; padding: 24px; overflow: auto; }
+.shell-admin .screen { border-left: 4px solid #7c3aed; }
+
+/* Auth shell — fullscreen, no app chrome */
+.shell-public { background: #f8fafc; }
+.shell-public .screen { display: none; min-height: calc(100vh - 49px); padding: 0; margin: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.shell-public .screen.active { display: flex; align-items: stretch; }
+.screen-auth-full { width: 100%; }
+.auth-page { display: grid; grid-template-columns: 1.1fr 0.9fr; width: 100%; min-height: calc(100vh - 49px); }
+.auth-hero { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%); color: #fff; padding: 60px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
+.auth-hero::after { content: ""; position: absolute; inset: 0; background: url("https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80") center/cover; opacity: 0.15; }
+.auth-hero > * { position: relative; z-index: 1; }
+.auth-hero h1 { font-size: 36px; font-weight: 800; margin: 0 0 16px; letter-spacing: -0.03em; }
+.auth-hero p { font-size: 16px; line-height: 1.6; opacity: 0.9; max-width: 400px; margin: 0 0 32px; }
+.auth-features { display: flex; flex-direction: column; gap: 12px; }
+.auth-feature { display: flex; align-items: center; gap: 10px; font-size: 14px; opacity: 0.95; }
+.auth-form-wrap { display: flex; align-items: center; justify-content: center; padding: 40px; background: #fff; }
+.auth-form-card { width: 100%; max-width: 400px; }
+.auth-form-card h2 { margin: 0 0 8px; font-size: 26px; font-weight: 800; }
+.auth-subtitle { color: #6b7280; font-size: 14px; margin: 0 0 28px; }
+.auth-segment { display: flex; background: #f3f4f6; padding: 4px; border-radius: 10px; margin-bottom: 24px; }
+.auth-segment button { flex: 1; border: 0; background: transparent; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 14px; color: #6b7280; cursor: pointer; }
+.auth-segment button.active { background: #fff; color: #111827; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 24px 0; color: #9ca3af; font-size: 12px; font-weight: 600; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: #e5e7eb; }
+.social-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.social-btn { border: 1px solid #e5e7eb; background: #fff; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+.screen { display: none; }
+.screen.active { display: block; }
+
+@media (max-width: 900px) {
+  .auth-page { grid-template-columns: 1fr; }
+  .auth-hero { padding: 40px 24px; min-height: 200px; }
+  .topnav { display: none; }
+  .admin-sidebar { width: 72px; }
+  .admin-nav-btn span:not(.admin-nav-icon) { display: none; }
+  .admin-brand-name, .admin-sidebar-footer { display: none; }
+}
+
+
+
+:root {
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-soft: #eff6ff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-border: #e5e7eb;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+  --color-success: #047857;
+  --color-warning: #b45309;
+  --color-danger: #dc2626;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.12);
+}
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+.icon { flex-shrink: 0; color: var(--color-text-muted); }
+.nav-section { margin-bottom: 14px; }
+.nav-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #9ca3af; margin: 0 0 6px 4px; }
+.sidebar-admin .nav-btn { background: #1a2332; }
+.hero-banner { position: relative; border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 24px; min-height: 220px; background-size: cover; background-position: center; }
+.hero-banner::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(17,24,39,0.82) 0%, rgba(17,24,39,0.35) 100%); }
+.hero-content { position: relative; z-index: 1; padding: 40px 36px; color: #fff; max-width: 560px; }
+.hero-content h1 { margin: 0 0 10px; font-size: 32px; font-weight: 800; letter-spacing: -0.03em; }
+.hero-trust { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 18px; font-size: 12px; opacity: 0.9; }
+.storefront-hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 24px; margin-bottom: 24px; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #93c5fd; margin: 0 0 8px; font-weight: 600; }
+.lead { color: #e5e7eb; line-height: 1.6; margin: 0; }
+.search-panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; }
+.search-panel-elevated { box-shadow: var(--shadow-md); margin-bottom: 20px; }
+.search-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.search-row .search-input { flex: 1; margin: 0; }
+.search-input, .text-input, .select-input { width: 100%; border: 1px solid #d1d5db; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; transition: border-color 0.15s, box-shadow 0.15s; }
+.search-input:focus, .text-input:focus, .select-input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.search-suggestions, .chip-row, .category-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip, .category-pill { background: #fff; border: 1px solid #dbeafe; color: #1d4ed8; border-radius: 999px; padding: 6px 12px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+.category-pill { border-color: #e5e7eb; color: #374151; }
+.category-pill.active, .chip.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.meta, .results-meta { font-size: 12px; color: var(--color-text-muted); margin: 10px 0 0; }
+.breadcrumb { font-size: 13px; color: var(--color-text-muted); margin-bottom: 16px; }
+.section-block { margin-top: 8px; }
+.section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+.product-card { position: relative; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px; background: var(--color-surface); transition: box-shadow 0.2s, transform 0.2s; }
+.product-card:hover { box-shadow: 0 12px 28px rgba(37, 99, 235, 0.14); transform: translateY(-3px); }
+.product-image, .pdp-main-image, .thumb { border-radius: 10px; overflow: hidden; background: #f3f4f6; }
+.product-image { aspect-ratio: 4/5; margin-bottom: 10px; }
+.product-image img, .pdp-main-image img, .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pdp-main-image { aspect-ratio: 1; }
+.thumb { border: 2px solid transparent; padding: 0; background: none; cursor: pointer; width: 72px; height: 72px; border-radius: 8px; overflow: hidden; }
+.badge { position: absolute; top: 10px; left: 10px; background: var(--color-primary); color: #fff; font-size: 10px; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; }
+.stat-card.warn { border-color: #fde68a; background: #fffbeb; }
+.stat-card.danger { border-color: #fecaca; background: #fef2f2; }
+.stat-card.ok { border-color: #bbf7d0; background: #f0fdf4; }
+.kpi-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 4px; }
+.kpi-value { font-size: 24px; font-weight: 800; color: var(--color-text); }
+.price { font-weight: 700; margin: 6px 0; }
+.stock-hint { font-size: 11px; color: #b45309; margin: 0 0 8px; }
+.btn { border: 0; border-radius: 8px; padding: 10px 16px; font-size: 13px; cursor: pointer; font-weight: 600; }
+.btn-primary { background: #2563eb; color: #fff; }
+.btn-ghost { background: #f3f4f6; color: #374151; }
+.btn-sm { padding: 6px 10px; font-size: 12px; }
+.btn-block { width: 100%; margin-top: 8px; }
+.screen-toolbar { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+.catalog-layout { display: grid; grid-template-columns: 240px 1fr; gap: 20px; }
+.filter-panel { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
+.filter-group { margin-bottom: 14px; }
+.filter-group h4 { margin: 0 0 8px; font-size: 13px; }
+.filter-group label { display: block; font-size: 13px; margin-bottom: 6px; }
+.swatches { display: flex; gap: 8px; }
+.swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #d1d5db; }
+.swatch.black { background: #111827; } .swatch.white { background: #f9fafb; } .swatch.red { background: #ef4444; } .swatch.blue { background: #3b82f6; }
+.pdp-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.pdp-main-image { height: 360px; }
+.pdp-thumbs { display: flex; gap: 8px; margin-top: 10px; }
+.thumb { width: 64px; height: 64px; cursor: pointer; }
+.thumb.active { outline: 2px solid #2563eb; }
+.price-lg { font-size: 28px; font-weight: 700; }
+.strike { font-size: 16px; color: #9ca3af; text-decoration: line-through; font-weight: 400; }
+.stock-ok { color: #047857; font-size: 13px; }
+.stock-warn { color: #b45309; font-size: 13px; }
+.variant-group h4 { margin: 0 0 8px; font-size: 13px; }
+.variant-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.variant { border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+.variant.active { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+.variant.disabled { opacity: 0.45; cursor: not-allowed; text-decoration: line-through; }
+.pdp-actions { display: flex; gap: 10px; margin: 16px 0; }
+.wizard-steps { display: flex; gap: 12px; margin: 16px 0 24px; }
+.step { flex: 1; background: #f3f4f6; border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #6b7280; display: flex; align-items: center; gap: 8px; }
+.step span { width: 22px; height: 22px; border-radius: 50%; background: #d1d5db; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+.step.active { background: #eff6ff; color: #1d4ed8; }
+.step.active span, .step.done span { background: #2563eb; }
+.step.done { background: #ecfdf5; color: #047857; }
+.checkout-grid, .wizard-grid, .account-layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
+.checkout-form, .order-summary, .account-panel { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
+.radio-card { display: block; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+.radio-card.active { border-color: #2563eb; background: #eff6ff; }
+.form-row { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin: 10px 0; }
+.form-grid { display: grid; gap: 12px; }
+.summary-line, .summary-total { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+.summary-total { font-weight: 700; border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 10px; }
+.alert { border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px; }
+.alert.info { background: #eff6ff; color: #1d4ed8; }
+.alert.warn { background: #fffbeb; color: #b45309; }
+.table-wrap { overflow: auto; border: 1px solid #e5e7eb; border-radius: 12px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th, .data-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; text-align: left; }
+.data-table th { background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; }
+.data-table .low { color: #b45309; font-weight: 700; }
+.data-table .neg { color: #dc2626; font-weight: 700; }
+.status-pill { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.status-pill.ok { background: #ecfdf5; color: #047857; }
+.status-pill.warn { background: #fffbeb; color: #b45309; }
+.status-pill.danger { background: #fef2f2; color: #dc2626; }
+.screen-admin { border-left: 4px solid #7c3aed; }
+.account-nav { display: flex; flex-direction: column; gap: 6px; }
+.account-tab { text-align: left; border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; padding: 10px 12px; cursor: pointer; }
+.account-tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+.upload-zone { border: 2px dashed #cbd5e1; border-radius: 10px; padding: 28px; text-align: center; color: #6b7280; font-size: 13px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.upload-zone:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
+.auth-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 420px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-border); }
+.auth-brand-panel { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #fff; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+.auth-brand-panel h2 { margin: 0 0 12px; font-size: 28px; font-weight: 800; }
+.auth-card { padding: 36px; background: var(--color-surface); }
+.auth-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.story-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.story-pill { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 999px; padding: 6px 10px; font-size: 11px; }
+.ui-placeholder { border: 1px dashed #cbd5e1; border-radius: 10px; padding: 32px; text-align: center; color: #6b7280; }
+.text-input.sm { padding: 6px 8px; font-size: 12px; }
+@media (max-width: 900px) {
+  .storefront-hero, .catalog-layout, .pdp-layout, .checkout-grid, .wizard-grid, .account-layout, .auth-split { grid-template-columns: 1fr; }
+}
+
+/* === Project theme: Enterprise Command Center === */
+:root {
+  --color-primary: #1a3a52;
+  --color-primary-dark: #1a3a52;
+  --color-primary-soft: #1a2332;
+  --color-accent: #00d4ff;
+  --color-surface: #0f1419;
+  --color-surface-muted: #1a2332;
+  --color-border: #2a3a4f;
+  --color-text: #e8eef7;
+  --color-text-muted: #8b95a8;
+  --radius-sm: 6px;
+  --radius-md: 6px;
+  --radius-lg: 6px;
+  --font-heading: "IBM Plex Sans", sans-serif;
+  --font-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+body { font-family: var(--font-body); background: #1a2332; color: #e8eef7; }
+h1, h2, h3, h4, .store-logo, .admin-brand-name { font-family: var(--font-heading); }
+.btn-primary { background: #1a3a52; border-color: #1a3a52; color: #0b1020; }
+.btn-primary:hover { filter: brightness(0.92); }
+.role-btn.active { background: #1a3a52; }
+.topnav-link.active { background: #1a2332; color: #1a3a52; }
+.admin-nav-btn.active { background: #1a2332; color: #1a3a52; }
+.shell-customer .screen, .admin-viewport .screen { background: #0f1419; color: #e8eef7; }
+.badge { background: #00d4ff; }
+
+/* screen: screen-dashboard */
+[data-screen="screen-dashboard"] {
+  --color-primary: #1a3a52;
+  --color-accent: #00d4ff;
+  --color-background: #0f1419;
+  --color-surface: #1a2332;
+  --color-surface-muted: #141b24;
+  --color-border: #2a3a4f;
+  --color-text: #e8eef7;
+  --color-text-muted: #8b95a8;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --font-heading: 'IBM Plex Sans', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --radius-md: 6px;
+}
+
+[data-screen="screen-dashboard"] {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+[data-screen="screen-dashboard"] .screen-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+[data-screen="screen-dashboard"] .screen-toolbar h2 {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-dashboard"] .screen-toolbar .meta {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0;
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+[data-screen="screen-dashboard"] .stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+[data-screen="screen-dashboard"] .stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+[data-screen="screen-dashboard"] .stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-text-muted);
+}
+
+[data-screen="screen-dashboard"] .stat-card.ok::before {
+  background: var(--color-success);
+}
+
+[data-screen="screen-dashboard"] .stat-card.warn::before {
+  background: var(--color-warning);
+}
+
+[data-screen="screen-dashboard"] .stat-card.danger::before {
+  background: var(--color-danger);
+}
+
+[data-screen="screen-dashboard"] .kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-dashboard"] .kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-accent);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+[data-screen="screen-dashboard"] .kpi-meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-dashboard"] .form-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+
+[data-screen="screen-dashboard"] .form-section h3 {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 12px;
+}
+
+[data-screen="screen-dashboard"] .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+[data-screen="screen-dashboard"] .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-screen="screen-dashboard"] .form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+[data-screen="screen-dashboard"] .required {
+  color: var(--color-danger);
+}
+
+[data-screen="screen-dashboard"] .form-group input,
+[data-screen="screen-dashboard"] .form-group select {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+[data-screen="screen-dashboard"] .form-group input:focus,
+[data-screen="screen-dashboard"] .form-group select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+[data-screen="screen-dashboard"] .helper-text {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-dashboard"] .error-text {
+  font-size: 12px;
+  color: var(--color-danger);
+  display: none;
+}
+
+[data-screen="screen-dashboard"] .error-text.show {
+  display: block;
+}
+
+[data-screen="screen-dashboard"] .vendor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+[data-screen="screen-dashboard"] .vendor-card {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+[data-screen="screen-dashboard"] .vendor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+[data-screen="screen-dashboard"] .vendor-header h4 {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-dashboard"] .status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+}
+
+[data-screen="screen-dashboard"] .status-badge.green {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-success);
+}
+
+[data-screen="screen-dashboard"] .status-badge.yellow {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+}
+
+[data-screen="screen-dashboard"] .status-badge.red {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+
+[data-screen="screen-dashboard"] .vendor-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+[data-screen="screen-dashboard"] .metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+[data-screen="screen-dashboard"] .metric-label {
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-dashboard"] .metric-value {
+  font-weight: 600;
+  color: var(--color-text);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+[data-screen="screen-dashboard"] .metric-row.highlight {
+  background: rgba(0, 212, 255, 0.08);
+  padding: 8px 10px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+[data-screen="screen-dashboard"] .score-high {
+  color: var(--color-success);
+}
+
+[data-screen="screen-dashboard"] .score-medium {
+  color: var(--color-warning);
+}
+
+[data-screen="screen-dashboard"] .score-low {
+  color: var(--color-danger);
+}
+
+[data-screen="screen-dashboard"] .trend-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+[data-screen="screen-dashboard"] .trend-chart {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+[data-screen="screen-dashboard"] .trend-svg {
+  width: 100%;
+  height: 160px;
+}
+
+[data-screen="screen-dashboard"] .trend-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 12px 0 0 0;
+  text-align: center;
+}
+
+[data-screen="screen-dashboard"] .trend-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+[data-screen="screen-dashboard"] .trend-stat {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+[data-screen="screen-dashboard"] .trend-stat .trend-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 0;
+}
+
+[data-screen="screen-dashboard"] .trend-stat .trend-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-accent);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+[data-screen="screen-dashboard"] .trend-stat .trend-meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-dashboard"] .form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+  padding-top: 12px;
+}
+
+[data-screen="screen-dashboard"] .btn {
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+[data-screen="screen-dashboard"] .btn-primary {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+[data-screen="screen-dashboard"] .btn-primary:hover {
+  background: #00b8d4;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
+
+[data-screen="screen-dashboard"] .btn-ghost {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+[data-screen="screen-dashboard"] .btn-ghost:hover {
+  background: var(--color-surface);
+  border-color: var(--color-accent);
+}
+
+[data-screen="screen-dashboard"] .alert-zone {
+  min-height: 0;
+}
+
+[data-screen="screen-dashboard"] .alert {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+[data-screen="screen-dashboard"] .alert.success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--color-success);
+}
+
+[data-screen="screen-dashboard"] .alert.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--color-danger);
+}
+
+@media (max-width: 768px) {
+  [data-screen="screen-dashboard"] {
+    padding: 16px;
+    gap: 16px;
+  }
+  [data-screen="screen-dashboard"] .form-grid {
+    grid-template-columns: 1fr;
+  }
+  [data-screen="screen-dashboard"] .trend-container {
+    grid-template-columns: 1fr;
+  }
+  [data-screen="screen-dashboard"] .screen-toolbar {
+    flex-direction: column;
+  }
+}
+
+/* screen: screen-atm-network */
+[data-screen="screen-atm-network"] {
+  --color-primary: #1a3a52;
+  --color-accent: #00d4ff;
+  --color-background: #0f1419;
+  --color-surface: #1a2332;
+  --color-surface-muted: #141b24;
+  --color-border: #2a3a4f;
+  --color-text: #e8eef7;
+  --color-text-muted: #8b95a8;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --font-heading: 'IBM Plex Sans', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --radius-md: 6px;
+}
+
+[data-screen="screen-atm-network"] {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+[data-screen="screen-atm-network"] .screen-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 24px;
+}
+
+[data-screen="screen-atm-network"] .screen-toolbar h2 {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-atm-network"] .screen-toolbar .meta {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+[data-screen="screen-atm-network"] .filter-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+[data-screen="screen-atm-network"] .filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  align-items: flex-end;
+}
+
+[data-screen="screen-atm-network"] .filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-screen="screen-atm-network"] .filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-atm-network"] .form-control {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+[data-screen="screen-atm-network"] .form-control:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+[data-screen="screen-atm-network"] .error-text {
+  font-size: 12px;
+  color: var(--color-danger);
+  display: none;
+}
+
+[data-screen="screen-atm-network"] .error-text.show {
+  display: block;
+}
+
+[data-screen="screen-atm-network"] .filter-apply {
+  align-self: flex-end;
+}
+
+[data-screen="screen-atm-network"] .stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+[data-screen="screen-atm-network"] .stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+[data-screen="screen-atm-network"] .stat-card.ok {
+  border-left: 4px solid var(--color-success);
+}
+
+[data-screen="screen-atm-network"] .stat-card.warn {
+  border-left: 4px solid var(--color-warning);
+}
+
+[data-screen="screen-atm-network"] .stat-card.danger {
+  border-left: 4px solid var(--color-danger);
+}
+
+[data-screen="screen-atm-network"] .stat-icon {
+  font-size: 28px;
+  min-width: 40px;
+  text-align: center;
+}
+
+[data-screen="screen-atm-network"] .stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+[data-screen="screen-atm-network"] .kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-atm-network"] .kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+[data-screen="screen-atm-network"] .kpi-percent {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-atm-network"] .metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+[data-screen="screen-atm-network"] .metric-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+[data-screen="screen-atm-network"] .metric-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+[data-screen="screen-atm-network"] .metric-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+[data-screen="screen-atm-network"] .metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+[data-screen="screen-atm-network"] .metric-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-atm-network"] .progress-bar {
+  height: 6px;
+  background: var(--color-surface-muted);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+[data-screen="screen-atm-network"] .progress-fill {
+  height: 100%;
+  background: var(--color-warning);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+[data-screen="screen-atm-network"] .progress-bar.good .progress-fill {
+  background: var(--color-success);
+}
+
+[data-screen="screen-atm-network"] .vendor-performance {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+[data-screen="screen-atm-network"] .vendor-performance h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-atm-network"] .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+[data-screen="screen-atm-network"] .data-table thead {
+  background: var(--color-surface-muted);
+  border-bottom: 2px solid var(--color-border);
+}
+
+[data-screen="screen-atm-network"] .data-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+[data-screen="screen-atm-network"] .data-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+[data-screen="screen-atm-network"] .data-table tbody tr:hover {
+  background: var(--color-surface-muted);
+}
+
+[data-screen="screen-atm-network"] .metric-badge {
+  display: inline-block;
+  background: var(--color-surface-muted);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+[data-screen="screen-atm-network"] .status-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+[data-screen="screen-atm-network"] .status-pill.ok {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-success);
+}
+
+[data-screen="screen-atm-network"] .status-pill.warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+}
+
+[data-screen="screen-atm-network"] .status-pill.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+
+[data-screen="screen-atm-network"] .alerts-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+[data-screen="screen-atm-network"] .alerts-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-atm-network"] .alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+[data-screen="screen-atm-network"] .alert {
+  background: var(--color-surface-muted);
+  border-left: 4px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+[data-screen="screen-atm-network"] .alert.alert-danger {
+  border-left-color: var(--color-danger);
+}
+
+[data-screen="screen-atm-network"] .alert.alert-warn {
+  border-left-color: var(--color-warning);
+}
+
+[data-screen="screen-atm-network"] .alert.alert-info {
+  border-left-color: var(--color-accent);
+}
+
+[data-screen="screen-atm-network"] .alert-icon {
+  font-size: 18px;
+  min-width: 24px;
+  text-align: center;
+}
+
+[data-screen="screen-atm-network"] .alert-content {
+  flex: 1;
+}
+
+[data-screen="screen-atm-network"] .alert-title {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+[data-screen="screen-atm-network"] .alert-message {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+[data-screen="screen-atm-network"] .alert-meta {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-atm-network"] .reporting-period {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+[data-screen="screen-atm-network"] .reporting-period h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-atm-network"] .period-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+[data-screen="screen-atm-network"] .period-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-screen="screen-atm-network"] .period-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-atm-network"] .period-value {
+  font-size: 14px;
+  color: var(--color-text);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+[data-screen="screen-atm-network"] .btn {
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+[data-screen="screen-atm-network"] .btn-primary {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+[data-screen="screen-atm-network"] .btn-primary:hover {
+  background: #00b8d4;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
+
+[data-screen="screen-atm-network"] .btn-ghost {
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-border);
+}
+
+[data-screen="screen-atm-network"] .btn-ghost:hover {
+  background: var(--color-surface-muted);
+  border-color: var(--color-accent);
+}
+
+[data-screen="screen-atm-network"] .btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* screen: screen-vendor-scorecard */
+[data-screen="screen-vendor-scorecard"] {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  background: #0f1419;
+  color: #e8eef7;
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+[data-screen="screen-vendor-scorecard"] .scorecard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+[data-screen="screen-vendor-scorecard"] .scorecard-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #e8eef7;
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+[data-screen="screen-vendor-scorecard"] .header-subtitle {
+  font-size: 14px;
+  color: #8b95a8;
+  margin: 0;
+}
+
+[data-screen="screen-vendor-scorecard"] .filter-section {
+  background: #1a2332;
+  border: 1px solid #2a3a4f;
+  border-radius: 6px;
+  padding: 20px;
+}
+
+[data-screen="screen-vendor-scorecard"] .filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  align-items: flex-end;
+}
+
+[data-screen="screen-vendor-scorecard"] .filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-screen="screen-vendor-scorecard"] .filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b95a8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+[data-screen="screen-vendor-scorecard"] .form-control {
+  background: #0f1419;
+  border: 1px solid #2a3a4f;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #e8eef7;
+  font-size: 14px;
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+[data-screen="screen-vendor-scorecard"] .form-control:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+[data-screen="screen-vendor-scorecard"] .filter-error {
+  color: #ff6b6b;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+[data-screen="screen-vendor-scorecard"] .kpi-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+[data-screen="screen-vendor-scorecard"] .kpi-card {
+  background: #1a2332;
+  border: 1px solid #2a3a4f;
+  border-radius: 6px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+[data-screen="screen-vendor-scorecard"] .kpi-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b95a8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+[data-screen="screen-vendor-scorecard"] .kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #00d4ff;
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+[data-screen="screen-vendor-scorecard"] .kpi-trend {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+[data-screen="screen-vendor-scorecard"] .kpi-trend.positive {
+  color: #4ade80;
+}
+
+[data-screen="screen-vendor-scorecard"] .kpi-trend.negative {
+  color: #ff6b6b;
+}
+
+[data-screen="screen-vendor-scorecard"] .scorecard-table-wrapper {
+  background: #1a2332;
+  border: 1px solid #2a3a4f;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+[data-screen="screen-vendor-scorecard"] .scorecard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+[data-screen="screen-vendor-scorecard"] .scorecard-table thead {
+  background: #0f1419;
+  border-bottom: 2px solid #2a3a4f;
+}
+
+[data-screen="screen-vendor-scorecard"] .scorecard-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #8b95a8;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+[data-screen="screen-vendor-scorecard"] .scorecard-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2a3a4f;
+  color: #e8eef7;
+}
+
+[data-screen="screen-vendor-scorecard"] .scorecard-table tbody tr:hover {
+  background: rgba(0, 212, 255, 0.05);
+}
+
+[data-screen="screen-vendor-scorecard"] .vendor-name {
+  font-weight: 600;
+  color: #00d4ff;
+}
+
+[data-screen="screen-vendor-scorecard"] .score-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+[data-screen="screen-vendor-scorecard"] .score-excellent {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+[data-screen="screen-vendor-scorecard"] .score-good {
+  background: rgba(0, 212, 255, 0.15);
+  color: #00d4ff;
+}
+
+[data-screen="screen-vendor-scorecard"] .score-fair {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+[data-screen="screen-vendor-scorecard"] .score-poor {
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff6b6b;
+}
+
+[data-screen="screen-vendor-scorecard"] .status-indicator {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+[data-screen="screen-vendor-scorecard"] .status-green {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+[data-screen="screen-vendor-scorecard"] .status-yellow {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+[data-screen="screen-vendor-scorecard"] .status-red {
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff6b6b;
+}
+
+[data-screen="screen-vendor-scorecard"] .reporting-period {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #1a2332;
+  border: 1px solid #2a3a4f;
+  border-radius: 6px;
+}
+
+[data-screen="screen-vendor-scorecard"] .period-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8b95a8;
+  margin: 0;
+}
+
+[data-screen="screen-vendor-scorecard"] .inline-date {
+  flex: 0 0 auto;
+  width: 140px;
+}
+
+[data-screen="screen-vendor-scorecard"] .btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* screen: screen-alerts */
+[data-screen="screen-alerts"] {
+  --color-primary: #1a3a52;
+  --color-accent: #00d4ff;
+  --color-background: #0f1419;
+  --color-surface: #1a2332;
+  --color-surface-muted: #141b24;
+  --color-border: #2a3a4f;
+  --color-text: #e8eef7;
+  --color-text-muted: #8b95a8;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --font-heading: 'IBM Plex Sans', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --radius-md: 6px;
+}
+
+[data-screen="screen-alerts"] {
+  padding: 2rem;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+[data-screen="screen-alerts"] .screen-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 2rem;
+}
+
+[data-screen="screen-alerts"] .screen-toolbar h2 {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-alerts"] .screen-toolbar .meta {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  max-width: 600px;
+}
+
+[data-screen="screen-alerts"] .stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+[data-screen="screen-alerts"] .stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-left: 4px solid var(--color-accent);
+}
+
+[data-screen="screen-alerts"] .stat-card.ok {
+  border-left-color: var(--color-success);
+}
+
+[data-screen="screen-alerts"] .stat-card.warn {
+  border-left-color: var(--color-warning);
+}
+
+[data-screen="screen-alerts"] .stat-card.danger {
+  border-left-color: var(--color-danger);
+}
+
+[data-screen="screen-alerts"] .kpi-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-alerts"] .kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+[data-screen="screen-alerts"] .kpi-trend {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-alerts"] .form-container {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+[data-screen="screen-alerts"] .form-section {
+  margin-bottom: 2.5rem;
+}
+
+[data-screen="screen-alerts"] .form-section:last-of-type {
+  margin-bottom: 2rem;
+}
+
+[data-screen="screen-alerts"] .section-title {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  color: var(--color-text);
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+[data-screen="screen-alerts"] .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+[data-screen="screen-alerts"] .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+[data-screen="screen-alerts"] .form-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+[data-screen="screen-alerts"] .required {
+  color: var(--color-danger);
+}
+
+[data-screen="screen-alerts"] .form-group input,
+[data-screen="screen-alerts"] .form-group select {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+[data-screen="screen-alerts"] .form-group input:focus,
+[data-screen="screen-alerts"] .form-group select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+[data-screen="screen-alerts"] .form-group input:disabled,
+[data-screen="screen-alerts"] .form-group input[readonly] {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+[data-screen="screen-alerts"] .metric-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+[data-screen="screen-alerts"] .metric-input-group input {
+  flex: 1;
+}
+
+[data-screen="screen-alerts"] .metric-unit {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+[data-screen="screen-alerts"] .helper-text {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-alerts"] .error-text {
+  font-size: 0.75rem;
+  color: var(--color-danger);
+  display: none;
+}
+
+[data-screen="screen-alerts"] .error-text.show {
+  display: block;
+}
+
+[data-screen="screen-alerts"] .form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+[data-screen="screen-alerts"] .btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+[data-screen="screen-alerts"] .btn-primary {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+[data-screen="screen-alerts"] .btn-primary:hover {
+  background: #00b8d4;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
+
+[data-screen="screen-alerts"] .btn-ghost {
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-border);
+}
+
+[data-screen="screen-alerts"] .btn-ghost:hover {
+  background: var(--color-surface-muted);
+  border-color: var(--color-accent);
+}
+
+[data-screen="screen-alerts"] .btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+}
+
+[data-screen="screen-alerts"] .alert-history {
+  margin-top: 2.5rem;
+}
+
+[data-screen="screen-alerts"] .table-wrap {
+  overflow-x: auto;
+}
+
+[data-screen="screen-alerts"] .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+[data-screen="screen-alerts"] .data-table thead {
+  background: var(--color-surface-muted);
+  border-bottom: 2px solid var(--color-border);
+}
+
+[data-screen="screen-alerts"] .data-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+[data-screen="screen-alerts"] .data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+[data-screen="screen-alerts"] .data-table tbody tr:hover {
+  background: var(--color-surface-muted);
+}
+
+[data-screen="screen-alerts"] .status-pill {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+[data-screen="screen-alerts"] .status-pill.ok {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-success);
+}
+
+[data-screen="screen-alerts"] .status-pill.warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+}
+
+[data-screen="screen-alerts"] .status-pill.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+
+/* screen: screen-reports */
+[data-screen="screen-reports"] {
+  --color-primary: #1a3a52;
+  --color-accent: #00d4ff;
+  --color-background: #0f1419;
+  --color-surface: #1a2332;
+  --color-surface-muted: #141b24;
+  --color-border: #2a3a4f;
+  --color-text: #e8eef7;
+  --color-text-muted: #8b95a8;
+  --color-ok: #10b981;
+  --color-warn: #f59e0b;
+  --color-danger: #ef4444;
+  --font-heading: 'IBM Plex Sans', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --radius-md: 6px;
+}
+
+[data-screen="screen-reports"] .screen-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 2rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 2rem;
+}
+
+[data-screen="screen-reports"] .screen-toolbar h2 {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 0.5rem 0;
+}
+
+[data-screen="screen-reports"] .screen-toolbar .meta {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+[data-screen="screen-reports"] .filter-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  margin: 0 2rem 2rem 2rem;
+}
+
+[data-screen="screen-reports"] .filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+[data-screen="screen-reports"] .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+[data-screen="screen-reports"] .form-group label {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+[data-screen="screen-reports"] .form-group .required {
+  color: var(--color-danger);
+}
+
+[data-screen="screen-reports"] .form-group input,
+[data-screen="screen-reports"] .form-group select {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+}
+
+[data-screen="screen-reports"] .form-group input:focus,
+[data-screen="screen-reports"] .form-group select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+[data-screen="screen-reports"] .error-text {
+  color: var(--color-danger);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: none;
+}
+
+[data-screen="screen-reports"] .error-text.show {
+  display: block;
+}
+
+[data-screen="screen-reports"] .filter-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+[data-screen="screen-reports"] .kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 0 2rem;
+  margin-bottom: 2rem;
+}
+
+[data-screen="screen-reports"] .kpi-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+[data-screen="screen-reports"] .kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-accent), transparent);
+}
+
+[data-screen="screen-reports"] .kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+[data-screen="screen-reports"] .kpi-label {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+[data-screen="screen-reports"] .status-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+[data-screen="screen-reports"] .status-badge.ok {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+[data-screen="screen-reports"] .status-badge.warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+[data-screen="screen-reports"] .kpi-value {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin-bottom: 0.5rem;
+}
+
+[data-screen="screen-reports"] .kpi-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-reports"] .chart-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  margin: 0 2rem 2rem 2rem;
+}
+
+[data-screen="screen-reports"] .chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+[data-screen="screen-reports"] .chart-header h3 {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+[data-screen="screen-reports"] .chart-period {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-reports"] .chart-placeholder {
+  width: 100%;
+  height: 300px;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-screen="screen-reports"] .chart-placeholder svg {
+  width: 100%;
+  height: 100%;
+}
+
+[data-screen="screen-reports"] .vendor-section {
+  padding: 0 2rem;
+  margin-bottom: 2rem;
+}
+
+[data-screen="screen-reports"] .vendor-section h3 {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 1.5rem 0;
+}
+
+[data-screen="screen-reports"] .table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+[data-screen="screen-reports"] .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+}
+
+[data-screen="screen-reports"] .data-table thead {
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+[data-screen="screen-reports"] .data-table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-reports"] .data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+[data-screen="screen-reports"] .data-table tbody tr:hover {
+  background: var(--color-surface-muted);
+}
+
+[data-screen="screen-reports"] .status-pill {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+[data-screen="screen-reports"] .status-pill.ok {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+[data-screen="screen-reports"] .status-pill.warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+[data-screen="screen-reports"] .export-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  margin: 0 2rem 2rem 2rem;
+}
+
+[data-screen="screen-reports"] .export-section h3 {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 1.5rem 0;
+}
+
+[data-screen="screen-reports"] .export-controls {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  align-items: start;
+}
+
+[data-screen="screen-reports"] .export-info p {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  margin: 0 0 1rem 0;
+}
+
+[data-screen="screen-reports"] .export-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+[data-screen="screen-reports"] .export-features li {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+[data-screen="screen-reports"] .export-features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
+[data-screen="screen-reports"] .export-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+}
+
+[data-screen="screen-reports"] .btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+[data-screen="screen-reports"] .btn-primary {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+[data-screen="screen-reports"] .btn-primary:hover {
+  background: #00b8d4;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
+
+[data-screen="screen-reports"] .btn-ghost {
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-border);
+}
+
+[data-screen="screen-reports"] .btn-ghost:hover {
+  background: var(--color-surface-muted);
+  border-color: var(--color-accent);
+}
+
+[data-screen="screen-reports"] .btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+}
+
+/* screen: screen-data-validation */
+[data-screen="screen-data-validation"] {
+  --color-primary: #1a3a52;
+  --color-accent: #00d4ff;
+  --color-background: #0f1419;
+  --color-surface: #1a2332;
+  --color-surface-muted: #141b24;
+  --color-border: #2a3a4f;
+  --color-text: #e8eef7;
+  --color-text-muted: #8b95a8;
+  --color-ok: #10b981;
+  --color-warn: #f59e0b;
+  --color-danger: #ef4444;
+  --font-heading: 'IBM Plex Sans', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --radius-md: 6px;
+}
+
+[data-screen="screen-data-validation"] {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+[data-screen="screen-data-validation"] .screen-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+[data-screen="screen-data-validation"] .screen-toolbar h2 {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-data-validation"] .screen-toolbar .meta {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+[data-screen="screen-data-validation"] .stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+[data-screen="screen-data-validation"] .stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+[data-screen="screen-data-validation"] .stat-card.ok {
+  border-left: 4px solid var(--color-ok);
+}
+
+[data-screen="screen-data-validation"] .stat-card.warn {
+  border-left: 4px solid var(--color-warn);
+}
+
+[data-screen="screen-data-validation"] .stat-card.danger {
+  border-left: 4px solid var(--color-danger);
+}
+
+[data-screen="screen-data-validation"] .kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-data-validation"] .kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-accent);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+[data-screen="screen-data-validation"] .kpi-meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+[data-screen="screen-data-validation"] .content-wrapper {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+}
+
+[data-screen="screen-data-validation"] .filter-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  height: fit-content;
+  position: sticky;
+  top: 32px;
+}
+
+[data-screen="screen-data-validation"] .filter-panel h3 {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-data-validation"] .filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+[data-screen="screen-data-validation"] .filter-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+[data-screen="screen-data-validation"] .required {
+  color: var(--color-danger);
+}
+
+[data-screen="screen-data-validation"] .form-control {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+[data-screen="screen-data-validation"] .form-control:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+[data-screen="screen-data-validation"] .error-text {
+  font-size: 12px;
+  color: var(--color-danger);
+  display: none;
+}
+
+[data-screen="screen-data-validation"] .error-text.show {
+  display: block;
+}
+
+[data-screen="screen-data-validation"] .filter-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+[data-screen="screen-data-validation"] .btn {
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.2s ease;
+}
+
+[data-screen="screen-data-validation"] .btn-primary {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+[data-screen="screen-data-validation"] .btn-primary:hover {
+  background: #00b8d4;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
+
+[data-screen="screen-data-validation"] .btn-ghost {
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-border);
+}
+
+[data-screen="screen-data-validation"] .btn-ghost:hover {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: var(--color-accent);
+}
+
+[data-screen="screen-data-validation"] .btn-block {
+  width: 100%;
+}
+
+[data-screen="screen-data-validation"] .btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+[data-screen="screen-data-validation"] .results-area {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+[data-screen="screen-data-validation"] .results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+[data-screen="screen-data-validation"] .results-header h3 {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-data-validation"] .results-meta {
+  display: flex;
+  gap: 12px;
+}
+
+[data-screen="screen-data-validation"] .badge {
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--color-accent);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+[data-screen="screen-data-validation"] .table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+[data-screen="screen-data-validation"] .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+[data-screen="screen-data-validation"] .data-table thead {
+  background: var(--color-surface-muted);
+  border-bottom: 2px solid var(--color-border);
+}
+
+[data-screen="screen-data-validation"] .data-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+[data-screen="screen-data-validation"] .data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+[data-screen="screen-data-validation"] .data-table tbody tr:hover {
+  background: rgba(0, 212, 255, 0.05);
+}
+
+[data-screen="screen-data-validation"] .metric-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+  color: var(--color-accent);
+}
+
+[data-screen="screen-data-validation"] .score-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+[data-screen="screen-data-validation"] .score-badge.excellent {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-ok);
+}
+
+[data-screen="screen-data-validation"] .score-badge.good {
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--color-accent);
+}
+
+[data-screen="screen-data-validation"] .score-badge.fair {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warn);
+}
+
+[data-screen="screen-data-validation"] .score-badge.poor {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+
+[data-screen="screen-data-validation"] .status-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+[data-screen="screen-data-validation"] .status-pill.ok {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-ok);
+}
+
+[data-screen="screen-data-validation"] .status-pill.warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warn);
+}
+
+[data-screen="screen-data-validation"] .status-pill.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+
+[data-screen="screen-data-validation"] .validation-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+[data-screen="screen-data-validation"] .validation-alerts h4 {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}
+
+[data-screen="screen-data-validation"] .alert {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border-left: 4px solid;
+  font-size: 13px;
+}
+
+[data-screen="screen-data-validation"] .alert-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+[data-screen="screen-data-validation"] .alert-info {
+  background: rgba(0, 212, 255, 0.1);
+  border-left-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+[data-screen="screen-data-validation"] .alert-warn {
+  background: rgba(245, 158, 11, 0.1);
+  border-left-color: var(--color-warn);
+  color: var(--color-warn);
+}
+
+[data-screen="screen-data-validation"] .alert-danger {
+  background: rgba(239, 68, 68, 0.1);
+  border-left-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+[data-screen="screen-data-validation"] .alert strong {
+  color: var(--color-text);
+}
+
+@media (max-width: 1024px) {
+  [data-screen="screen-data-validation"] .content-wrapper {
+    grid-template-columns: 1fr;
+  }
+  [data-screen="screen-data-validation"] .filter-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  [data-screen="screen-data-validation"] {
+    padding: 20px;
+    gap: 16px;
+  }
+  [data-screen="screen-data-validation"] .stat-grid {
+    grid-template-columns: 1fr;
+  }
+  [data-screen="screen-data-validation"] .screen-toolbar {
+    flex-direction: column;
+  }
+  [data-screen="screen-data-validation"] .data-table {
+    font-size: 12px;
+  }
+  [data-screen="screen-data-validation"] .data-table th,
+  [data-screen="screen-data-validation"] .data-table td {
+    padding: 10px 12px;
+  }
+}</style>
+</head>
+<body>
+  <div id="app">
+<div class="proto-bar" role="banner">
+  <div class="proto-bar-inner">
+    <div class="proto-brand"><span class="proto-dot"></span> Interactive Prototype</div>
+    <div class="role-switcher" role="tablist" aria-label="Switch app experience"><button type="button" class="role-btn active" data-role="customer" aria-pressed="true">App</button><button type="button" class="role-btn" data-role="admin" aria-pressed="false">Admin</button></div>
+  </div>
+</div>
+<div class="shell shell-customer" data-shell="customer">
+      <header class="store-topbar">
+  <div class="topbar-inner">
+    <div class="topbar-left">
+      <div class="store-logo">ATM Monitoring</div>
+      <nav class="topnav" aria-label="Store navigation"><button type="button" class="topnav-link active" data-target="screen-atm-network">ATM Network Map &amp; Status</button><button type="button" class="topnav-link" data-target="screen-vendor-scorecard">Vendor Performance Scorecard</button><button type="button" class="topnav-link" data-target="screen-alerts">Alert Management Center</button><button type="button" class="topnav-link" data-target="screen-reports">Reports &amp; Analytics</button><button type="button" class="topnav-link" data-target="screen-data-validation">Data Aggregation &amp; Validatio…</button></nav>
+    </div>
+    <div class="topbar-right">
+      <button type="button" class="icon-btn" aria-label="Search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+      <button type="button" class="icon-btn cart-btn" aria-label="Cart"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="cart-badge">2</span></button>
+      <button type="button" class="icon-btn" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+    </div>
+  </div>
+</header>
+      <main class="customer-viewport"><section class="screen" data-screen="screen-atm-network" data-role="customer">
+  <header class="screen-toolbar">
+    <div>
+      <h2>ATM Network Map & Status</h2>
+      <p class="meta">Real-time monitoring of ATM performance across your network</p>
+    </div>
+    <button type="button" class="btn btn-primary">Export Report</button>
+  </header>
+
+  <div class="filter-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label for="report-type">Report Type</label>
+        <select id="report-type" class="form-control">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="start-date">Start Date</label>
+        <input type="date" id="start-date" class="form-control" required>
+        <span class="error-text" id="start-date-error"></span>
+      </div>
+      <div class="filter-group">
+        <label for="end-date">End Date</label>
+        <input type="date" id="end-date" class="form-control" required>
+        <span class="error-text" id="end-date-error"></span>
+      </div>
+      <div class="filter-group">
+        <label for="vendor-filter">Vendor</label>
+        <select id="vendor-filter" class="form-control">
+          <option value="all">All Vendors</option>
+          <option value="diebold">Diebold Nixdorf</option>
+          <option value="ncr">NCR Corporation</option>
+          <option value="wincor">Wincor Nixdorf</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="location-filter">Location</label>
+        <input type="text" id="location-filter" class="form-control" placeholder="City, region, or all">
+      </div>
+      <div class="filter-group">
+        <label for="export-format">Export Format</label>
+        <select id="export-format" class="form-control">
+          <option value="pdf">PDF</option>
+          <option value="csv">CSV</option>
+          <option value="excel">Excel</option>
+        </select>
+      </div>
+      <button type="button" class="btn btn-ghost filter-apply">Apply Filters</button>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-icon total">📊</div>
+      <div class="stat-content">
+        <span class="kpi-label">Total ATMs</span>
+        <span class="kpi-value">1,248</span>
+      </div>
+    </div>
+    <div class="stat-card ok">
+      <div class="stat-icon">✓</div>
+      <div class="stat-content">
+        <span class="kpi-label">Operational</span>
+        <span class="kpi-value">1,102</span>
+        <span class="kpi-percent">88.3%</span>
+      </div>
+    </div>
+    <div class="stat-card warn">
+      <div class="stat-icon">⚠</div>
+      <div class="stat-content">
+        <span class="kpi-label">Maintenance</span>
+        <span class="kpi-value">94</span>
+        <span class="kpi-percent">7.5%</span>
+      </div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-icon">✕</div>
+      <div class="stat-content">
+        <span class="kpi-label">Offline</span>
+        <span class="kpi-value">52</span>
+        <span class="kpi-percent">4.2%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <h3>Network Uptime</h3>
+      <div class="metric-display">
+        <span class="metric-value">99.2%</span>
+        <span class="metric-label">vs 99.5% SLA Target</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 99.2%"></div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <h3>Transaction Success Rate</h3>
+      <div class="metric-display">
+        <span class="metric-value">98.7%</span>
+        <span class="metric-label">vs 99.0% SLA Target</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 98.7%"></div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <h3>Avg Response Time</h3>
+      <div class="metric-display">
+        <span class="metric-value">342ms</span>
+        <span class="metric-label">Median (target: 500ms)</span>
+      </div>
+      <div class="progress-bar good">
+        <div class="progress-fill" style="width: 68%"></div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <h3>Network Performance</h3>
+      <div class="metric-display">
+        <span class="metric-value">94</span>
+        <span class="metric-label">Performance Score (0-100)</span>
+      </div>
+      <div class="progress-bar good">
+        <div class="progress-fill" style="width: 94%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="vendor-performance">
+    <h3>Vendor Performance Summary</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Vendor Name</th>
+          <th>Uptime %</th>
+          <th>Success Rate %</th>
+          <th>Response Time (ms)</th>
+          <th>Performance Score</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Diebold Nixdorf</td>
+          <td><span class="metric-badge">99.4%</span></td>
+          <td><span class="metric-badge">99.1%</span></td>
+          <td><span class="metric-badge">318ms</span></td>
+          <td><span class="metric-badge">96</span></td>
+          <td><span class="status-pill ok">Excellent</span></td>
+          <td><button type="button" class="btn btn-ghost btn-sm">View Details</button></td>
+        </tr>
+        <tr>
+          <td>NCR Corporation</td>
+          <td><span class="metric-badge">98.9%</span></td>
+          <td><span class="metric-badge">98.5%</span></td>
+          <td><span class="metric-badge">356ms</span></td>
+          <td><span class="metric-badge">92</span></td>
+          <td><span class="status-pill ok">Good</span></td>
+          <td><button type="button" class="btn btn-ghost btn-sm">View Details</button></td>
+        </tr>
+        <tr>
+          <td>Wincor Nixdorf</td>
+          <td><span class="metric-badge">98.1%</span></td>
+          <td><span class="metric-badge">97.8%</span></td>
+          <td><span class="metric-badge">381ms</span></td>
+          <td><span class="metric-badge">89</span></td>
+          <td><span class="status-pill warn">Fair</span></td>
+          <td><button type="button" class="btn btn-ghost btn-sm">View Details</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="alerts-section">
+    <h3>Active Alerts & Issues</h3>
+    <div class="alert-list">
+      <div class="alert alert-danger">
+        <div class="alert-icon">⚠</div>
+        <div class="alert-content">
+          <div class="alert-title">High Response Time Detected</div>
+          <div class="alert-message">ATM-4521 (Downtown Branch) experiencing 1,200ms response times. Investigate immediately.</div>
+          <div class="alert-meta">2 minutes ago</div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm">Acknowledge</button>
+      </div>
+      <div class="alert alert-warn">
+        <div class="alert-icon">!</div>
+        <div class="alert-content">
+          <div class="alert-title">Scheduled Maintenance Window</div>
+          <div class="alert-message">ATM-2847 (Airport Terminal) scheduled for maintenance 2024-01-15 02:00-04:00 UTC</div>
+          <div class="alert-meta">3 hours ago</div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm">View Schedule</button>
+      </div>
+      <div class="alert alert-info">
+        <div class="alert-icon">ℹ</div>
+        <div class="alert-content">
+          <div class="alert-title">Daily Aggregation Complete</div>
+          <div class="alert-message">Network performance report generated. All metrics within expected ranges.</div>
+          <div class="alert-meta">1 hour ago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reporting-period">
+    <h3>Reporting Period</h3>
+    <div class="period-info">
+      <div class="period-item">
+        <span class="period-label">Current Period:</span>
+        <span class="period-value">2024-01-08 to 2024-01-14 (7 days)</span>
+      </div>
+      <div class="period-item">
+        <span class="period-label">Last Aggregation:</span>
+        <span class="period-value">2024-01-14 00:15 UTC (completed in 42 minutes)</span>
+      </div>
+      <div class="period-item">
+        <span class="period-label">Next Aggregation:</span>
+        <span class="period-value">2024-01-15 00:00 UTC</span>
+      </div>
+    </div>
+  </div>
+</section><section class="screen" data-screen="screen-vendor-scorecard" data-role="customer">
+  <header class="scorecard-header">
+    <div class="header-content">
+      <h1>Vendor Performance Scorecard</h1>
+      <p class="header-subtitle">Real-time SLA compliance tracking and performance metrics across all ATM service vendors</p>
+    </div>
+    <button type="button" class="btn btn-primary" id="exportBtn">Export Report</button>
+  </header>
+
+  <div class="filter-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label for="reportType">Report Type</label>
+        <select id="reportType" class="form-control">
+          <option value="daily">Daily</option>
+          <option value="weekly" selected>Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="startDate">Start Date</label>
+        <input type="date" id="startDate" class="form-control" required />
+      </div>
+      <div class="filter-group">
+        <label for="endDate">End Date</label>
+        <input type="date" id="endDate" class="form-control" required />
+      </div>
+      <div class="filter-group">
+        <label for="vendorFilter">Vendor</label>
+        <select id="vendorFilter" class="form-control">
+          <option value="all">All Vendors</option>
+          <option value="vendor-a">FirstBank ATM Services</option>
+          <option value="vendor-b">SecureNet Solutions</option>
+          <option value="vendor-c">GlobalCash Networks</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="locationFilter">Location</label>
+        <input type="text" id="locationFilter" class="form-control" placeholder="All locations" />
+      </div>
+      <div class="filter-group">
+        <label for="exportFormat">Export Format</label>
+        <select id="exportFormat" class="form-control">
+          <option value="pdf">PDF</option>
+          <option value="csv">CSV</option>
+          <option value="excel">Excel</option>
+        </select>
+      </div>
+      <button type="button" class="btn btn-ghost" id="applyFilters">Apply Filters</button>
+    </div>
+    <div class="filter-error" id="filterError" style="display: none;"></div>
+  </div>
+
+  <div class="kpi-summary">
+    <div class="kpi-card">
+      <div class="kpi-header">Average Uptime</div>
+      <div class="kpi-value">99.47%</div>
+      <div class="kpi-trend positive">↑ 0.23% vs last period</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-header">Transaction Success Rate</div>
+      <div class="kpi-value">98.92%</div>
+      <div class="kpi-trend positive">↑ 0.15% vs last period</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-header">Avg Response Time</div>
+      <div class="kpi-value">245ms</div>
+      <div class="kpi-trend negative">↑ 12ms vs last period</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-header">SLA Compliance</div>
+      <div class="kpi-value">96.8%</div>
+      <div class="kpi-trend positive">↑ 1.2% vs last period</div>
+    </div>
+  </div>
+
+  <div class="scorecard-table-wrapper">
+    <table class="scorecard-table">
+      <thead>
+        <tr>
+          <th>Vendor Name</th>
+          <th>Uptime %</th>
+          <th>Success Rate %</th>
+          <th>Response Time (ms)</th>
+          <th>SLA Target %</th>
+          <th>Performance Score</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="vendor-name">FirstBank ATM Services</td>
+          <td>99.82%</td>
+          <td>99.45%</td>
+          <td>198</td>
+          <td>99.5%</td>
+          <td><span class="score-badge score-excellent">94</span></td>
+          <td><span class="status-indicator status-green">Excellent</span></td>
+          <td><button type="button" class="btn btn-ghost btn-sm">Details</button></td>
+        </tr>
+        <tr>
+          <td class="vendor-name">SecureNet Solutions</td>
+          <td>99.12%</td>
+          <td>98.67%</td>
+          <td>267</td>
+          <td>99.0%</td>
+          <td><span class="score-badge score-good">87</span></td>
+          <td><span class="status-indicator status-green">Good</span></td>
+          <td><button type="button" class="btn btn-ghost btn-sm">Details</button></td>
+        </tr>
+        <tr>
+          <td class="vendor-name">GlobalCash Networks</td>
+          <td>98.45%</td>
+          <td>97.89%</td>
+          <td>312</td>
+          <td>98.5%</td>
+          <td><span class="score-badge score-fair">78</span></td>
+          <td><span class="status-indicator status-yellow">Fair</span></td>
+          <td><button type="button" class="btn btn-ghost btn-sm">Details</button></td>
+        </tr>
+        <tr>
+          <td class="vendor-name">Express ATM Corp</td>
+          <td>97.23%</td>
+          <td>96.34%</td>
+          <td>445</td>
+          <td>98.0%</td>
+          <td><span class="score-badge score-poor">62</span></td>
+          <td><span class="status-indicator status-red">Needs Attention</span></td>
+          <td><button type="button" class="btn btn-ghost btn-sm">Details</button></td>
+        </tr>
+        <tr>
+          <td class="vendor-name">CashFlow International</td>
+          <td>99.56%</td>
+          <td>99.12%</td>
+          <td>223</td>
+          <td>99.5%</td>
+          <td><span class="score-badge score-excellent">91</span></td>
+          <td><span class="status-indicator status-green">Excellent</span></td>
+          <td><button type="button" class="btn btn-ghost btn-sm">Details</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="reporting-period">
+    <p class="period-label">Reporting Period:</p>
+    <input type="date" id="reportingPeriod" class="form-control inline-date" />
+  </div>
+</section><section class="screen" data-screen="screen-alerts" data-role="customer">
+  <header class="screen-toolbar">
+    <div>
+      <h2>Alert Management Center</h2>
+      <p class="meta">Centralized alert management system for ATM status changes, performance degradation, and SLA breaches with escalation tracking</p>
+    </div>
+    <button type="button" class="btn btn-primary">Generate Report</button>
+  </header>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <span class="kpi-label">Total Alerts</span>
+      <span class="kpi-value">1,248</span>
+      <span class="kpi-trend">↑ 12% this week</span>
+    </div>
+    <div class="stat-card ok">
+      <span class="kpi-label">Resolved</span>
+      <span class="kpi-value">1,102</span>
+      <span class="kpi-trend">88.3% resolution rate</span>
+    </div>
+    <div class="stat-card warn">
+      <span class="kpi-label">In Progress</span>
+      <span class="kpi-value">94</span>
+      <span class="kpi-trend">Avg 4.2h response</span>
+    </div>
+    <div class="stat-card danger">
+      <span class="kpi-label">Critical</span>
+      <span class="kpi-value">12</span>
+      <span class="kpi-trend">Requires immediate action</span>
+    </div>
+  </div>
+
+  <div class="form-container">
+    <div class="form-section">
+      <h3 class="section-title">Report Configuration</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="report-type">Report Type <span class="required">*</span></label>
+          <select id="report-type" name="report-type" required>
+            <option value="">Select report type</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="custom">Custom</option>
+          </select>
+          <span class="helper-text">Choose aggregation period for performance metrics</span>
+        </div>
+
+        <div class="form-group">
+          <label for="start-date">Start Date <span class="required">*</span></label>
+          <input type="date" id="start-date" name="start-date" required>
+          <span class="helper-text">Minimum 7 days of historical data required</span>
+          <span class="error-text" id="start-date-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="end-date">End Date <span class="required">*</span></label>
+          <input type="date" id="end-date" name="end-date" required>
+          <span class="helper-text">Cannot exceed 12 months from start date</span>
+          <span class="error-text" id="end-date-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="vendor-filter">Vendor Filter <span class="required">*</span></label>
+          <select id="vendor-filter" name="vendor-filter" required>
+            <option value="all">All Vendors</option>
+            <option value="diebold">Diebold Nixdorf</option>
+            <option value="ncr">NCR Corporation</option>
+            <option value="wincor">Wincor Nixdorf</option>
+            <option value="hyosung">Hyosung</option>
+          </select>
+          <span class="helper-text">Filter alerts by service vendor</span>
+        </div>
+
+        <div class="form-group">
+          <label for="location-filter">Location Filter</label>
+          <input type="text" id="location-filter" name="location-filter" placeholder="e.g., New York, CA, All">
+          <span class="helper-text">Leave blank for all locations</span>
+        </div>
+
+        <div class="form-group">
+          <label for="export-format">Export Format <span class="required">*</span></label>
+          <select id="export-format" name="export-format" required>
+            <option value="">Select format</option>
+            <option value="pdf">PDF (under 50MB)</option>
+            <option value="csv">CSV</option>
+            <option value="excel">Excel</option>
+          </select>
+          <span class="helper-text">Output format for report generation</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3 class="section-title">Performance Metrics</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="vendor-name">Vendor Name</label>
+          <input type="text" id="vendor-name" name="vendor-name" placeholder="e.g., Diebold Nixdorf" readonly>
+          <span class="helper-text">Auto-populated from vendor filter</span>
+        </div>
+
+        <div class="form-group">
+          <label for="uptime-percentage">Uptime Percentage</label>
+          <div class="metric-input-group">
+            <input type="number" id="uptime-percentage" name="uptime-percentage" min="0" max="100" step="0.01" placeholder="99.95" readonly>
+            <span class="metric-unit">%</span>
+          </div>
+          <span class="helper-text">Calculated from ATM health check data (excludes maintenance)</span>
+          <span class="error-text" id="uptime-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="success-rate">Transaction Success Rate</label>
+          <div class="metric-input-group">
+            <input type="number" id="success-rate" name="success-rate" min="0" max="100" step="0.01" placeholder="98.47" readonly>
+            <span class="metric-unit">%</span>
+          </div>
+          <span class="helper-text">Excludes transactions during scheduled maintenance windows</span>
+          <span class="error-text" id="success-rate-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="response-time">Average Response Time</label>
+          <div class="metric-input-group">
+            <input type="number" id="response-time" name="response-time" min="0" step="1" placeholder="245" readonly>
+            <span class="metric-unit">ms</span>
+          </div>
+          <span class="helper-text">Median calculation to reduce outlier impact</span>
+        </div>
+
+        <div class="form-group">
+          <label for="sla-target">SLA Target</label>
+          <div class="metric-input-group">
+            <input type="number" id="sla-target" name="sla-target" min="0" max="100" step="0.01" placeholder="99.50" required>
+            <span class="metric-unit">%</span>
+          </div>
+          <span class="helper-text">Agreed service level target percentage</span>
+          <span class="error-text" id="sla-target-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="performance-score">Performance Score</label>
+          <div class="metric-input-group">
+            <input type="number" id="performance-score" name="performance-score" min="0" max="100" step="0.1" placeholder="94.2" readonly>
+            <span class="metric-unit">/ 100</span>
+          </div>
+          <span class="helper-text">Calculated overall performance rating</span>
+          <span class="error-text" id="performance-score-error"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3 class="section-title">Status & Period</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="status-indicator">Status Indicator <span class="required">*</span></label>
+          <select id="status-indicator" name="status-indicator" required>
+            <option value="">Select status</option>
+            <option value="green">Green - Healthy</option>
+            <option value="yellow">Yellow - Degraded</option>
+            <option value="red">Red - Critical</option>
+          </select>
+          <span class="helper-text">Color-coded status based on performance metrics</span>
+        </div>
+
+        <div class="form-group">
+          <label for="reporting-period">Reporting Period <span class="required">*</span></label>
+          <input type="date" id="reporting-period" name="reporting-period" required>
+          <span class="helper-text">Aggregation runs daily at midnight UTC, completes within 1 hour</span>
+          <span class="error-text" id="reporting-period-error"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" id="submit-btn">Generate & Export Report</button>
+      <button type="button" class="btn btn-ghost" id="cancel-btn">Cancel</button>
+    </div>
+  </div>
+
+  <div class="alert-history">
+    <h3 class="section-title">Recent Alert Activity</h3>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Alert ID</th>
+            <th>Vendor</th>
+            <th>Location</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Triggered</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>#ALT-2024-001248</td>
+            <td>Diebold Nixdorf</td>
+            <td>New York, NY</td>
+            <td>SLA Breach</td>
+            <td><span class="status-pill danger">Critical</span></td>
+            <td>2 hours ago</td>
+            <td><button type="button" class="btn btn-ghost btn-sm">View</button></td>
+          </tr>
+          <tr>
+            <td>#ALT-2024-001247</td>
+            <td>NCR Corporation</td>
+            <td>Los Angeles, CA</td>
+            <td>Performance Degradation</td>
+            <td><span class="status-pill warn">In Progress</span></td>
+            <td>4 hours ago</td>
+            <td><button type="button" class="btn btn-ghost btn-sm">View</button></td>
+          </tr>
+          <tr>
+            <td>#ALT-2024-001246</td>
+            <td>Hyosung</td>
+            <td>Chicago, IL</td>
+            <td>Status Change</td>
+            <td><span class="status-pill ok">Resolved</span></td>
+            <td>1 day ago</td>
+            <td><button type="button" class="btn btn-ghost btn-sm">View</button></td>
+          </tr>
+          <tr>
+            <td>#ALT-2024-001245</td>
+            <td>Wincor Nixdorf</td>
+            <td>Houston, TX</td>
+            <td>Uptime Alert</td>
+            <td><span class="status-pill ok">Resolved</span></td>
+            <td>2 days ago</td>
+            <td><button type="button" class="btn btn-ghost btn-sm">View</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section><section class="screen" data-screen="screen-reports" data-role="customer">
+  <header class="screen-toolbar">
+    <div>
+      <h2>Reports & Analytics</h2>
+      <p class="meta">Detailed reporting interface for ATM behavior patterns, trends, and performance analysis with customizable date ranges and export capabilities</p>
+    </div>
+    <button type="button" class="btn btn-primary">Generate Report</button>
+  </header>
+
+  <div class="filter-section">
+    <div class="filter-grid">
+      <div class="form-group">
+        <label for="report-type">Report Type <span class="required">*</span></label>
+        <select id="report-type" name="report-type" required>
+          <option value="">Select report type</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="start-date">Start Date <span class="required">*</span></label>
+        <input type="date" id="start-date" name="start-date" required />
+        <span class="error-text" id="start-date-error"></span>
+      </div>
+
+      <div class="form-group">
+        <label for="end-date">End Date <span class="required">*</span></label>
+        <input type="date" id="end-date" name="end-date" required />
+        <span class="error-text" id="end-date-error"></span>
+      </div>
+
+      <div class="form-group">
+        <label for="vendor-filter">Vendor Filter <span class="required">*</span></label>
+        <select id="vendor-filter" name="vendor-filter" required>
+          <option value="all">All Vendors</option>
+          <option value="diebold">Diebold Nixdorf</option>
+          <option value="ncr">NCR Corporation</option>
+          <option value="wincor">Wincor Nixdorf</option>
+          <option value="hyosung">Hyosung</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="location-filter">Location Filter</label>
+        <input type="text" id="location-filter" name="location-filter" placeholder="e.g., New York, All Locations" />
+      </div>
+
+      <div class="form-group">
+        <label for="export-format">Export Format <span class="required">*</span></label>
+        <select id="export-format" name="export-format" required>
+          <option value="">Select format</option>
+          <option value="pdf">PDF</option>
+          <option value="csv">CSV</option>
+          <option value="excel">Excel</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="btn btn-primary" id="apply-filters">Apply Filters</button>
+      <button type="button" class="btn btn-ghost" id="reset-filters">Reset</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Uptime Percentage</span>
+        <span class="status-badge ok">Healthy</span>
+      </div>
+      <div class="kpi-value">99.87%</div>
+      <div class="kpi-meta">SLA Target: 99.5%</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Transaction Success Rate</span>
+        <span class="status-badge ok">Healthy</span>
+      </div>
+      <div class="kpi-value">98.42%</div>
+      <div class="kpi-meta">Excludes maintenance windows</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Avg Response Time</span>
+        <span class="status-badge warn">Monitor</span>
+      </div>
+      <div class="kpi-value">847ms</div>
+      <div class="kpi-meta">Median calculation</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Performance Score</span>
+        <span class="status-badge ok">Excellent</span>
+      </div>
+      <div class="kpi-value">94/100</div>
+      <div class="kpi-meta">Overall rating</div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-header">
+      <h3>Performance Trends</h3>
+      <span class="chart-period">Last 30 Days</span>
+    </div>
+    <div class="chart-placeholder">
+      <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.3" />
+            <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:0" />
+          </linearGradient>
+        </defs>
+        <polyline points="20,250 80,180 140,200 200,120 260,140 320,100 380,130 440,90 500,110 560,80" fill="none" stroke="#00d4ff" stroke-width="2" />
+        <polyline points="20,250 80,180 140,200 200,120 260,140 320,100 380,130 440,90 500,110 560,80" fill="url(#chartGradient)" />
+        <line x1="20" y1="280" x2="560" y2="280" stroke="#2a3a4f" stroke-width="1" />
+        <text x="20" y="295" font-size="12" fill="#8b95a8">Day 1</text>
+        <text x="540" y="295" font-size="12" fill="#8b95a8">Day 30</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="vendor-section">
+    <h3>Vendor Performance Summary</h3>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Vendor Name</th>
+            <th>Uptime %</th>
+            <th>Success Rate</th>
+            <th>Response Time</th>
+            <th>Performance Score</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Diebold Nixdorf</td>
+            <td>99.92%</td>
+            <td>98.67%</td>
+            <td>812ms</td>
+            <td>96/100</td>
+            <td><span class="status-pill ok">Excellent</span></td>
+            <td><button type="button" class="btn btn-ghost btn-sm">Details</button></td>
+          </tr>
+          <tr>
+            <td>NCR Corporation</td>
+            <td>99.78%</td>
+            <td>98.12%</td>
+            <td>891ms</td>
+            <td>93/100</td>
+            <td><span class="status-pill ok">Good</span></td>
+            <td><button type="button" class="btn btn-ghost btn-sm">Details</button></td>
+          </tr>
+          <tr>
+            <td>Wincor Nixdorf</td>
+            <td>99.45%</td>
+            <td>97.89%</td>
+            <td>945ms</td>
+            <td>91/100</td>
+            <td><span class="status-pill warn">Fair</span></td>
+            <td><button type="button" class="btn btn-ghost btn-sm">Details</button></td>
+          </tr>
+          <tr>
+            <td>Hyosung</td>
+            <td>98.92%</td>
+            <td>96.54%</td>
+            <td>1,124ms</td>
+            <td>87/100</td>
+            <td><span class="status-pill warn">Monitor</span></td>
+            <td><button type="button" class="btn btn-ghost btn-sm">Details</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="export-section">
+    <h3>Export Report</h3>
+    <div class="export-controls">
+      <div class="export-info">
+        <p>Generate and download your customized report based on the filters above.</p>
+        <ul class="export-features">
+          <li>Includes 7+ days of historical data for trend analysis</li>
+          <li>Peak hours identified based on transaction volume</li>
+          <li>PDF reports optimized under 50MB</li>
+          <li>Real-time aggregated metrics (updated daily at midnight UTC)</li>
+        </ul>
+      </div>
+      <div class="export-buttons">
+        <button type="button" class="btn btn-primary" id="export-btn">Export Report</button>
+        <button type="button" class="btn btn-ghost" id="schedule-btn">Schedule Report</button>
+      </div>
+    </div>
+  </div>
+</section><section class="screen" data-screen="screen-data-validation" data-role="customer">
+  <header class="screen-toolbar">
+    <div>
+      <h2>Data Aggregation & Validation</h2>
+      <p class="meta">System administration interface for transaction data collection, aggregation, and quality assurance with anomaly detection</p>
+    </div>
+    <button type="button" class="btn btn-primary">Generate Report</button>
+  </header>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <span class="kpi-label">Daily Aggregations</span>
+      <span class="kpi-value">1,248</span>
+      <span class="kpi-meta">Last 30 days</span>
+    </div>
+    <div class="stat-card ok">
+      <span class="kpi-label">Validation Pass Rate</span>
+      <span class="kpi-value">99.7%</span>
+      <span class="kpi-meta">Within SLA</span>
+    </div>
+    <div class="stat-card warn">
+      <span class="kpi-label">Anomalies Detected</span>
+      <span class="kpi-value">23</span>
+      <span class="kpi-meta">Requires review</span>
+    </div>
+    <div class="stat-card danger">
+      <span class="kpi-label">Failed Validations</span>
+      <span class="kpi-value">4</span>
+      <span class="kpi-meta">Critical attention</span>
+    </div>
+  </div>
+
+  <div class="content-wrapper">
+    <aside class="filter-panel">
+      <h3>Filters & Parameters</h3>
+      
+      <div class="filter-section">
+        <label class="filter-label">Report Type <span class="required">*</span></label>
+        <select class="form-control" id="reportType" required>
+          <option value="">Select report type</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+
+      <div class="filter-section">
+        <label class="filter-label">Start Date <span class="required">*</span></label>
+        <input type="date" class="form-control" id="startDate" required>
+        <span class="error-text" id="startDateError"></span>
+      </div>
+
+      <div class="filter-section">
+        <label class="filter-label">End Date <span class="required">*</span></label>
+        <input type="date" class="form-control" id="endDate" required>
+        <span class="error-text" id="endDateError"></span>
+      </div>
+
+      <div class="filter-section">
+        <label class="filter-label">Vendor Filter</label>
+        <select class="form-control" id="vendorFilter">
+          <option value="all">All Vendors</option>
+          <option value="diebold">Diebold Nixdorf</option>
+          <option value="ncr">NCR Corporation</option>
+          <option value="wincor">Wincor Nixdorf</option>
+          <option value="hyosung">Hyosung</option>
+        </select>
+      </div>
+
+      <div class="filter-section">
+        <label class="filter-label">Location Filter</label>
+        <input type="text" class="form-control" id="locationFilter" placeholder="e.g., New York, CA, All">
+      </div>
+
+      <div class="filter-section">
+        <label class="filter-label">Export Format</label>
+        <select class="form-control" id="exportFormat">
+          <option value="pdf">PDF</option>
+          <option value="csv">CSV</option>
+          <option value="excel">Excel</option>
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <button type="button" class="btn btn-primary btn-block">Apply Filters</button>
+        <button type="button" class="btn btn-ghost btn-block">Reset</button>
+      </div>
+    </aside>
+
+    <main class="results-area">
+      <div class="results-header">
+        <h3>Vendor Performance Metrics</h3>
+        <div class="results-meta">
+          <span class="badge">23 vendors</span>
+          <span class="badge">Period: Jan 1 - Jan 31, 2024</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Vendor Name</th>
+              <th>Uptime %</th>
+              <th>Success Rate %</th>
+              <th>Avg Response (ms)</th>
+              <th>SLA Target %</th>
+              <th>Performance Score</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Diebold Nixdorf</strong></td>
+              <td><span class="metric-value">99.8%</span></td>
+              <td><span class="metric-value">99.5%</span></td>
+              <td><span class="metric-value">245</span></td>
+              <td><span class="metric-value">99.0%</span></td>
+              <td><span class="score-badge excellent">98</span></td>
+              <td><span class="status-pill ok">Green</span></td>
+              <td><button type="button" class="btn btn-ghost btn-sm">View Details</button></td>
+            </tr>
+            <tr>
+              <td><strong>NCR Corporation</strong></td>
+              <td><span class="metric-value">98.9%</span></td>
+              <td><span class="metric-value">98.2%</span></td>
+              <td><span class="metric-value">312</span></td>
+              <td><span class="metric-value">98.5%</span></td>
+              <td><span class="score-badge good">94</span></td>
+              <td><span class="status-pill ok">Green</span></td>
+              <td><button type="button" class="btn btn-ghost btn-sm">View Details</button></td>
+            </tr>
+            <tr>
+              <td><strong>Wincor Nixdorf</strong></td>
+              <td><span class="metric-value">97.2%</span></td>
+              <td><span class="metric-value">96.8%</span></td>
+              <td><span class="metric-value">428</span></td>
+              <td><span class="metric-value">97.0%</span></td>
+              <td><span class="score-badge fair">87</span></td>
+              <td><span class="status-pill warn">Yellow</span></td>
+              <td><button type="button" class="btn btn-ghost btn-sm">View Details</button></td>
+            </tr>
+            <tr>
+              <td><strong>Hyosung</strong></td>
+              <td><span class="metric-value">95.1%</span></td>
+              <td><span class="metric-value">94.3%</span></td>
+              <td><span class="metric-value">567</span></td>
+              <td><span class="metric-value">96.0%</span></td>
+              <td><span class="score-badge poor">78</span></td>
+              <td><span class="status-pill danger">Red</span></td>
+              <td><button type="button" class="btn btn-ghost btn-sm">View Details</button></td>
+            </tr>
+            <tr>
+              <td><strong>GRG Banking</strong></td>
+              <td><span class="metric-value">99.1%</span></td>
+              <td><span class="metric-value">99.0%</span></td>
+              <td><span class="metric-value">289</span></td>
+              <td><span class="metric-value">98.5%</span></td>
+              <td><span class="score-badge good">95</span></td>
+              <td><span class="status-pill ok">Green</span></td>
+              <td><button type="button" class="btn btn-ghost btn-sm">View Details</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="validation-alerts">
+        <h4>Data Quality Alerts</h4>
+        <div class="alert alert-info">
+          <svg class="alert-icon" viewBox="0 0 20 20" width="16" height="16">
+            <circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <text x="10" y="13" text-anchor="middle" font-size="10" fill="currentColor">i</text>
+          </svg>
+          <div>
+            <strong>Aggregation Status:</strong> Last run completed at 2024-01-31 00:47 UTC (47 minutes). Next run scheduled for 2024-02-01 00:00 UTC.
+          </div>
+        </div>
+        <div class="alert alert-warn">
+          <svg class="alert-icon" viewBox="0 0 20 20" width="16" height="16">
+            <path d="M10 2L2 18h16L10 2z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <div>
+            <strong>Anomaly Detected:</strong> Hyosung vendor showing 4.9% uptime deviation from 7-day trend. Review transaction logs for 2024-01-28 to 2024-01-30.
+          </div>
+        </div>
+        <div class="alert alert-danger">
+          <svg class="alert-icon" viewBox="0 0 20 20" width="16" height="16">
+            <circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="10" y1="6" x2="10" y2="12" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="10" cy="15" r="0.8" fill="currentColor"/>
+          </svg>
+          <div>
+            <strong>Validation Failed:</strong> 4 transactions from 2024-01-30 have invalid timestamps. Manual review required before final aggregation.
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</section></main>
+    </div>
+<div class="shell shell-admin" data-shell="admin">
+      <aside class="admin-sidebar">
+  <div class="admin-brand">
+    <span class="admin-badge">Admin</span>
+    <div class="admin-brand-name">ATM Monitoring</div>
+  </div>
+  <nav class="admin-nav" aria-label="Admin navigation"><button type="button" class="admin-nav-btn active" data-target="screen-dashboard">
+      <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
+      <span>Real-Time Monitoring Dashboa…</span>
+    </button></nav>
+  <div class="admin-sidebar-footer">
+    <div class="admin-user">
+      <div class="admin-avatar">A</div>
+      <div><strong>Admin User</strong><span class="meta">admin@store.com</span></div>
+    </div>
+  </div>
+</aside>
+      <div class="admin-main">
+        <header class="admin-topbar">
+  <div class="admin-topbar-title">Dashboard</div>
+  <div class="admin-topbar-actions">
+    <button type="button" class="btn btn-ghost btn-sm">Notifications</button>
+    <button type="button" class="btn btn-primary btn-sm">+ New</button>
+  </div>
+</header>
+        <main class="admin-viewport"><section class="screen" data-screen="screen-dashboard" data-role="admin">
+  <header class="screen-toolbar">
+    <div>
+      <h2>Real-Time Monitoring Dashboard</h2>
+      <p class="meta">Centralized dashboard displaying real-time ATM transaction data, network status, and key performance indicators across all ATMs with automatic 30-second refresh</p>
+    </div>
+    <button type="button" class="btn btn-primary">Generate Report</button>
+  </header>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <span class="kpi-label">Total ATMs</span>
+      <span class="kpi-value">1,248</span>
+      <span class="kpi-meta">Monitored</span>
+    </div>
+    <div class="stat-card ok">
+      <span class="kpi-label">Operational</span>
+      <span class="kpi-value">1,102</span>
+      <span class="kpi-meta">88.3% uptime</span>
+    </div>
+    <div class="stat-card warn">
+      <span class="kpi-label">Maintenance</span>
+      <span class="kpi-value">94</span>
+      <span class="kpi-meta">Scheduled</span>
+    </div>
+    <div class="stat-card danger">
+      <span class="kpi-label">Critical Issues</span>
+      <span class="kpi-value">12</span>
+      <span class="kpi-meta">Requires action</span>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Report Configuration</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="report-type">Report Type <span class="required">*</span></label>
+        <select id="report-type" name="report-type" required>
+          <option value="">Select report type</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="custom">Custom</option>
+        </select>
+        <span class="helper-text">Type of report to generate</span>
+      </div>
+
+      <div class="form-group">
+        <label for="start-date">Start Date <span class="required">*</span></label>
+        <input type="date" id="start-date" name="start-date" required>
+        <span class="helper-text">Beginning of reporting period</span>
+        <span class="error-text" id="start-date-error"></span>
+      </div>
+
+      <div class="form-group">
+        <label for="end-date">End Date <span class="required">*</span></label>
+        <input type="date" id="end-date" name="end-date" required>
+        <span class="helper-text">End of reporting period (max 12 months)</span>
+        <span class="error-text" id="end-date-error"></span>
+      </div>
+
+      <div class="form-group">
+        <label for="vendor-filter">Vendor Filter <span class="required">*</span></label>
+        <select id="vendor-filter" name="vendor-filter" required>
+          <option value="all">All Vendors</option>
+          <option value="nexus">Nexus Financial</option>
+          <option value="prime">Prime ATM Services</option>
+          <option value="global">Global Cash Network</option>
+          <option value="metro">Metro Banking Solutions</option>
+        </select>
+        <span class="helper-text">Specific vendor or all vendors</span>
+      </div>
+
+      <div class="form-group">
+        <label for="location-filter">Location Filter</label>
+        <input type="text" id="location-filter" name="location-filter" placeholder="e.g., New York, Chicago, All">
+        <span class="helper-text">Specific location or all locations</span>
+      </div>
+
+      <div class="form-group">
+        <label for="export-format">Export Format <span class="required">*</span></label>
+        <select id="export-format" name="export-format" required>
+          <option value="">Select format</option>
+          <option value="pdf">PDF</option>
+          <option value="csv">CSV</option>
+          <option value="excel">Excel</option>
+        </select>
+        <span class="helper-text">Output format for report</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Vendor Performance Scorecard</h3>
+    <div class="vendor-grid">
+      <div class="vendor-card">
+        <div class="vendor-header">
+          <h4>Nexus Financial</h4>
+          <span class="status-badge green">Active</span>
+        </div>
+        <div class="vendor-metrics">
+          <div class="metric-row">
+            <span class="metric-label">Uptime Percentage</span>
+            <span class="metric-value">99.2%</span>
+            <input type="hidden" class="uptime-input" value="99.2" data-vendor="nexus">
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Transaction Success Rate</span>
+            <span class="metric-value">98.7%</span>
+            <input type="hidden" class="success-input" value="98.7" data-vendor="nexus">
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Avg Response Time</span>
+            <span class="metric-value">245ms</span>
+            <input type="hidden" class="response-input" value="245" data-vendor="nexus">
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">SLA Target</span>
+            <span class="metric-value">95%</span>
+            <input type="hidden" class="sla-input" value="95" data-vendor="nexus">
+          </div>
+          <div class="metric-row highlight">
+            <span class="metric-label">Performance Score</span>
+            <span class="metric-value score-high">94</span>
+            <input type="hidden" class="score-input" value="94" data-vendor="nexus">
+          </div>
+        </div>
+      </div>
+
+      <div class="vendor-card">
+        <div class="vendor-header">
+          <h4>Prime ATM Services</h4>
+          <span class="status-badge yellow">Warning</span>
+        </div>
+        <div class="vendor-metrics">
+          <div class="metric-row">
+            <span class="metric-label">Uptime Percentage</span>
+            <span class="metric-value">96.1%</span>
+            <input type="hidden" class="uptime-input" value="96.1" data-vendor="prime">
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Transaction Success Rate</span>
+            <span class="metric-value">94.3%</span>
+            <input type="hidden" class="success-input" value="94.3" data-vendor="prime">
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Avg Response Time</span>
+            <span class="metric-value">512ms</span>
+            <input type="hidden" class="response-input" value="512" data-vendor="prime">
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">SLA Target</span>
+            <span class="metric-value">95%</span>
+            <input type="hidden" class="sla-input" value="95" data-vendor="prime">
+          </div>
+          <div class="metric-row highlight">
+            <span class="metric-label">Performance Score</span>
+            <span class="metric-value score-medium">82</span>
+            <input type="hidden" class="score-input" value="82" data-vendor="prime">
+          </div>
+        </div>
+      </div>
+
+      <div class="vendor-card">
+        <div class="vendor-header">
+          <h4>Global Cash Network</h4>
+          <span class="status-badge red">Critical</span>
+        </div>
+        <div class="vendor-metrics">
+          <div class="metric-row">
+            <span class="metric-label">Uptime Percentage</span>
+            <span class="metric-value">91.8%</span>
+            <input type="hidden" class="uptime-input" value="91.8" data-vendor="global">
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Transaction Success Rate</span>
+            <span class="metric-value">89.2%</span>
+            <input type="hidden" class="success-input" value="89.2" data-vendor="global">
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Avg Response Time</span>
+            <span class="metric-value">1,240ms</span>
+            <input type="hidden" class="response-input" value="1240" data-vendor="global">
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">SLA Target</span>
+            <span class="metric-value">95%</span>
+            <input type="hidden" class="sla-input" value="95" data-vendor="global">
+          </div>
+          <div class="metric-row highlight">
+            <span class="metric-label">Performance Score</span>
+            <span class="metric-value score-low">68</span>
+            <input type="hidden" class="score-input" value="68" data-vendor="global">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Trend Analysis</h3>
+    <div class="trend-container">
+      <div class="trend-chart">
+        <svg viewBox="0 0 400 200" class="trend-svg">
+          <defs>
+            <linearGradient id="trendGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.3" />
+              <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:0" />
+            </linearGradient>
+          </defs>
+          <polyline points="20,160 60,140 100,130 140,110 180,95 220,85 260,75 300,70 340,65 380,60" fill="none" stroke="#00d4ff" stroke-width="2" />
+          <polygon points="20,160 60,140 100,130 140,110 180,95 220,85 260,75 300,70 340,65 380,60 380,200 20,200" fill="url(#trendGradient)" />
+          <text x="10" y="190" font-size="12" fill="#8b95a8">7 days ago</text>
+          <text x="350" y="190" font-size="12" fill="#8b95a8">Today</text>
+        </svg>
+        <p class="trend-label">Transaction Volume Trend (Current vs Previous Period)</p>
+      </div>
+      <div class="trend-stats">
+        <div class="trend-stat">
+          <span class="trend-label">Current Period</span>
+          <span class="trend-value">+12.4%</span>
+          <span class="trend-meta">vs previous period</span>
+        </div>
+        <div class="trend-stat">
+          <span class="trend-label">Peak Hours</span>
+          <span class="trend-value">11:00 AM - 2:00 PM</span>
+          <span class="trend-meta">Highest transaction volume</span>
+        </div>
+        <div class="trend-stat">
+          <span class="trend-label">Failure Pattern</span>
+          <span class="trend-value">0.8%</span>
+          <span class="trend-meta">Down from 1.2% last period</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="button" class="btn btn-primary" id="generate-btn">Generate & Export Report</button>
+    <button type="button" class="btn btn-ghost" id="cancel-btn">Cancel</button>
+  </div>
+
+  <div class="alert-zone" id="alert-zone"></div>
+</section></main>
+      </div>
+    </div>
+</div>
+  <script>
+(function() {
+  const roleBtns = document.querySelectorAll('.role-btn');
+  const shells = document.querySelectorAll('.shell');
+
+  function screensInShell(shell) {
+    return shell ? Array.from(shell.querySelectorAll('.screen')) : [];
+  }
+
+  function activateScreen(screenId, shell) {
+    if (!shell) return;
+    screensInShell(shell).forEach((s) => {
+      s.classList.toggle('active', s.getAttribute('data-screen') === screenId);
+    });
+    shell.querySelectorAll('[data-target]').forEach((btn) => {
+      btn.classList.toggle('active', btn.getAttribute('data-target') === screenId);
+    });
+  }
+
+  function setRole(role) {
+    shells.forEach((s) => s.classList.toggle('active', s.getAttribute('data-shell') === role));
+    roleBtns.forEach((b) => {
+      const on = b.getAttribute('data-role') === role;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const shell = document.querySelector('[data-shell="' + role + '"]');
+    const first = screensInShell(shell)[0];
+    if (first) activateScreen(first.getAttribute('data-screen'), shell);
+  }
+
+  roleBtns.forEach((btn) => {
+    btn.addEventListener('click', () => setRole(btn.getAttribute('data-role')));
+  });
+
+  document.querySelectorAll('[data-target]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-target');
+      const shell = btn.closest('.shell');
+      activateScreen(target, shell);
+    });
+  });
+
+  const defaultRoleBtn = document.querySelector('.role-btn.active') || roleBtns[0];
+  if (defaultRoleBtn) {
+    setRole(defaultRoleBtn.getAttribute('data-role'));
+  } else {
+    const firstShell = shells[0];
+    if (firstShell) {
+      firstShell.classList.add('active');
+      const first = screensInShell(firstShell)[0];
+      if (first) activateScreen(first.getAttribute('data-screen'), firstShell);
+    }
+  }
+})();
+
+document.addEventListener('DOMContentLoaded', function() {
+  const startDateInput = document.getElementById('startDate');
+  const endDateInput = document.getElementById('endDate');
+  const reportTypeSelect = document.getElementById('reportType');
+  const applyFiltersBtn = document.getElementById('applyFilters');
+  const exportBtn = document.getElementById('exportBtn');
+  const filterError = document.getElementById('filterError');
+  const reportingPeriodInput = document.getElementById('reportingPeriod');
+
+  // Set default dates (7 days ago to today)
+  const today = new Date();
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  startDateInput.value = sevenDaysAgo.toISOString().split('T')[0];
+  endDateInput.value = today.toISOString().split('T')[0];
+  reportingPeriodInput.value = today.toISOString().split('T')[0];
+
+  function validateDateRange() {
+    filterError.style.display = 'none';
+    const startDate = new Date(startDateInput.value);
+    const endDate = new Date(endDateInput.value);
+    const today = new Date();
+    const maxDate = new Date(today.getTime() + 12 * 30 * 24 * 60 * 60 * 1000);
+
+    if (!startDateInput.value || !endDateInput.value) {
+      filterError.textContent = 'Start and End dates are required';
+      filterError.style.display = 'block';
+      return false;
+    }
+
+    if (startDate >= endDate) {
+      filterError.textContent = 'Start date must be before end date';
+      filterError.style.display = 'block';
+      return false;
+    }
+
+    const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+    if (daysDiff < 7) {
+      filterError.textContent = 'Date range must include at least 7 days of data';
+      filterError.style.display = 'block';
+      return false;
+    }
+
+    if (daysDiff > 365) {
+      filterError.textContent = 'Date range cannot exceed 12 months';
+      filterError.style.display = 'block';
+      return false;
+    }
+
+    return true;
+  }
+
+  applyFiltersBtn.addEventListener('click', function() {
+    if (validateDateRange()) {
+      filterError.textContent = 'Filters applied successfully';
+      filterError.style.color = '#4ade80';
+      filterError.style.display = 'block';
+      setTimeout(() => {
+        filterError.style.display = 'none';
+      }, 3000);
+    }
+  });
+
+  exportBtn.addEventListener('click', function() {
+    if (validateDateRange()) {
+      const format = document.getElementById('exportFormat').value.toUpperCase();
+      alert(`Exporting report as ${format}...
+
+Report will be generated within 5 minutes.`);
+    }
+  });
+
+  startDateInput.addEventListener('change', validateDateRange);
+  endDateInput.addEventListener('change', validateDateRange);
+});
+const form = document.querySelector('[data-screen="screen-alerts"] form') || document.querySelector('[data-screen="screen-alerts"]');
+const startDateInput = document.getElementById('start-date');
+const endDateInput = document.getElementById('end-date');
+const reportTypeSelect = document.getElementById('report-type');
+const slaTargetInput = document.getElementById('sla-target');
+const uptimeInput = document.getElementById('uptime-percentage');
+const successRateInput = document.getElementById('success-rate');
+const performanceScoreInput = document.getElementById('performance-score');
+const submitBtn = document.getElementById('submit-btn');
+const cancelBtn = document.getElementById('cancel-btn');
+
+function validateDateRange() {
+  const startDate = new Date(startDateInput.value);
+  const endDate = new Date(endDateInput.value);
+  const startDateError = document.getElementById('start-date-error');
+  const endDateError = document.getElementById('end-date-error');
+  
+  startDateError.textContent = '';
+  endDateError.textContent = '';
+  startDateError.classList.remove('show');
+  endDateError.classList.remove('show');
+  
+  if (startDateInput.value && endDateInput.value) {
+    if (startDate >= endDate) {
+      endDateError.textContent = 'End date must be after start date';
+      endDateError.classList.add('show');
+      return false;
+    }
+    
+    const diffTime = Math.abs(endDate - startDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 7) {
+      startDateError.textContent = 'Minimum 7 days of historical data required';
+      startDateError.classList.add('show');
+      return false;
+    }
+    
+    if (diffDays > 365) {
+      endDateError.textContent = 'Date range cannot exceed 12 months';
+      endDateError.classList.add('show');
+      return false;
+    }
+  }
+  return true;
+}
+
+function validateMetrics() {
+  const uptimeError = document.getElementById('uptime-error');
+  const successRateError = document.getElementById('success-rate-error');
+  const performanceScoreError = document.getElementById('performance-score-error');
+  const slaTargetError = document.getElementById('sla-target-error');
+  
+  let isValid = true;
+  
+  if (uptimeInput.value && (uptimeInput.value < 0 || uptimeInput.value > 100)) {
+    uptimeError.textContent = 'Uptime must be between 0-100%';
+    uptimeError.classList.add('show');
+    isValid = false;
+  } else {
+    uptimeError.classList.remove('show');
+  }
+  
+  if (successRateInput.value && (successRateInput.value < 0 || successRateInput.value > 100)) {
+    successRateError.textContent = 'Success rate must be between 0-100%';
+    successRateError.classList.add('show');
+    isValid = false;
+  } else {
+    successRateError.classList.remove('show');
+  }
+  
+  if (performanceScoreInput.value && (performanceScoreInput.value < 0 || performanceScoreInput.value > 100)) {
+    performanceScoreError.textContent = 'Performance score must be between 0-100';
+    performanceScoreError.classList.add('show');
+    isValid = false;
+  } else {
+    performanceScoreError.classList.remove('show');
+  }
+  
+  if (slaTargetInput.value && (slaTargetInput.value < 0 || slaTargetInput.value > 100)) {
+    slaTargetError.textContent = 'SLA target must be between 0-100%';
+    slaTargetError.classList.add('show');
+    isValid = false;
+  } else {
+    slaTargetError.classList.remove('show');
+  }
+  
+  return isValid;
+}
+
+startDateInput.addEventListener('change', validateDateRange);
+endDateInput.addEventListener('change', validateDateRange);
+uptimeInput.addEventListener('change', validateMetrics);
+successRateInput.addEventListener('change', validateMetrics);
+performanceScoreInput.addEventListener('change', validateMetrics);
+slaTargetInput.addEventListener('change', validateMetrics);
+
+submitBtn.addEventListener('click', function() {
+  const reportType = document.getElementById('report-type').value;
+  const startDate = startDateInput.value;
+  const endDate = endDateInput.value;
+  const vendorFilter = document.getElementById('vendor-filter').value;
+  const exportFormat = document.getElementById('export-format').value;
+  const slaTarget = slaTargetInput.value;
+  
+  if (!reportType || !startDate || !endDate || !vendorFilter || !exportFormat || !slaTarget) {
+    alert('Please fill in all required fields');
+    return;
+  }
+  
+  if (!validateDateRange() || !validateMetrics()) {
+    alert('Please fix validation errors before submitting');
+    return;
+  }
+  
+  alert(`Report generated successfully!
+Type: ${reportType}
+Period: ${startDate} to ${endDate}
+Format: ${exportFormat}
+Report will complete within 5 minutes.`);
+});
+
+cancelBtn.addEventListener('click', function() {
+  document.getElementById('report-type').value = '';
+  startDateInput.value = '';
+  endDateInput.value = '';
+  document.getElementById('vendor-filter').value = 'all';
+  document.getElementById('location-filter').value = '';
+  document.getElementById('export-format').value = '';
+  slaTargetInput.value = '';
+  document.getElementById('status-indicator').value = '';
+  document.getElementById('reporting-period').value = '';
+  document.querySelectorAll('.error-text').forEach(el => el.classList.remove('show'));
+});
+(function() {
+  const startDateInput = document.getElementById('start-date');
+  const endDateInput = document.getElementById('end-date');
+  const reportTypeSelect = document.getElementById('report-type');
+  const applyFiltersBtn = document.getElementById('apply-filters');
+  const resetFiltersBtn = document.getElementById('reset-filters');
+  const exportBtn = document.getElementById('export-btn');
+  const scheduleBtn = document.getElementById('schedule-btn');
+
+  function validateDateRange() {
+    const startDate = new Date(startDateInput.value);
+    const endDate = new Date(endDateInput.value);
+    const startError = document.getElementById('start-date-error');
+    const endError = document.getElementById('end-date-error');
+    let isValid = true;
+
+    startError.textContent = '';
+    startError.classList.remove('show');
+    endError.textContent = '';
+    endError.classList.remove('show');
+
+    if (startDateInput.value && endDateInput.value) {
+      if (startDate > endDate) {
+        startError.textContent = 'Start date must be before end date';
+        startError.classList.add('show');
+        isValid = false;
+      }
+
+      const diffTime = Math.abs(endDate - startDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays > 365) {
+        endError.textContent = 'Date range cannot exceed 12 months';
+        endError.classList.add('show');
+        isValid = false;
+      }
+
+      if (diffDays < 7) {
+        startError.textContent = 'Reports require at least 7 days of data';
+        startError.classList.add('show');
+        isValid = false;
+      }
+    }
+
+    return isValid;
+  }
+
+  startDateInput.addEventListener('change', validateDateRange);
+  endDateInput.addEventListener('change', validateDateRange);
+
+  reportTypeSelect.addEventListener('change', function() {
+    if (this.value === 'daily') {
+      const today = new Date().toISOString().split('T')[0];
+      startDateInput.value = today;
+      endDateInput.value = today;
+    } else if (this.value === 'weekly') {
+      const today = new Date();
+      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      startDateInput.value = weekAgo.toISOString().split('T')[0];
+      endDateInput.value = today.toISOString().split('T')[0];
+    } else if (this.value === 'monthly') {
+      const today = new Date();
+      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      startDateInput.value = monthAgo.toISOString().split('T')[0];
+      endDateInput.value = today.toISOString().split('T')[0];
+    }
+  });
+
+  applyFiltersBtn.addEventListener('click', function() {
+    if (validateDateRange()) {
+      console.log('Filters applied');
+      applyFiltersBtn.textContent = 'Filters Applied ✓';
+      setTimeout(() => {
+        applyFiltersBtn.textContent = 'Apply Filters';
+      }, 2000);
+    }
+  });
+
+  resetFiltersBtn.addEventListener('click', function() {
+    document.getElementById('report-type').value = '';
+    startDateInput.value = '';
+    endDateInput.value = '';
+    document.getElementById('vendor-filter').value = 'all';
+    document.getElementById('location-filter').value = '';
+    document.getElementById('export-format').value = '';
+    document.getElementById('start-date-error').classList.remove('show');
+    document.getElementById('end-date-error').classList.remove('show');
+  });
+
+  exportBtn.addEventListener('click', function() {
+    if (validateDateRange()) {
+      exportBtn.textContent = 'Exporting...';
+      setTimeout(() => {
+        exportBtn.textContent = 'Export Complete ✓';
+        setTimeout(() => {
+          exportBtn.textContent = 'Export Report';
+        }, 2000);
+      }, 1500);
+    }
+  });
+
+  scheduleBtn.addEventListener('click', function() {
+    alert('Schedule Report feature: Set up automated report generation and delivery.');
+  });
+})();
+document.addEventListener('DOMContentLoaded', function() {
+  const startDateInput = document.getElementById('startDate');
+  const endDateInput = document.getElementById('endDate');
+  const startDateError = document.getElementById('startDateError');
+  const endDateError = document.getElementById('endDateError');
+  const reportTypeSelect = document.getElementById('reportType');
+
+  function validateDates() {
+    const startDate = new Date(startDateInput.value);
+    const endDate = new Date(endDateInput.value);
+    const today = new Date();
+    let isValid = true;
+
+    startDateError.textContent = '';
+    endDateError.textContent = '';
+
+    if (startDateInput.value && endDateInput.value) {
+      if (startDate > endDate) {
+        startDateError.textContent = 'Start date must be before end date';
+        startDateError.classList.add('show');
+        isValid = false;
+      }
+
+      const diffTime = Math.abs(endDate - startDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays < 7) {
+        endDateError.textContent = 'Date range must be at least 7 days for trend analysis';
+        endDateError.classList.add('show');
+        isValid = false;
+      }
+
+      if (diffDays > 365) {
+        endDateError.textContent = 'Date range cannot exceed 12 months';
+        endDateError.classList.add('show');
+        isValid = false;
+      }
+    }
+
+    return isValid;
+  }
+
+  startDateInput.addEventListener('change', validateDates);
+  endDateInput.addEventListener('change', validateDates);
+
+  reportTypeSelect.addEventListener('change', function() {
+    const today = new Date();
+    const startDate = new Date(today);
+    const endDate = new Date(today);
+
+    switch(this.value) {
+      case 'daily':
+        startDate.setDate(today.getDate() - 1);
+        break;
+      case 'weekly':
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case 'monthly':
+        startDate.setMonth(today.getMonth() - 1);
+        break;
+      case 'custom':
+        return;
+    }
+
+    startDateInput.value = startDate.toISOString().split('T')[0];
+    endDateInput.value = endDate.toISOString().split('T')[0];
+    validateDates();
+  });
+});</script>
+</body>
+</html>

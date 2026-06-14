@@ -31,6 +31,7 @@ export const login = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        allowedLlms: user.allowedLlms || [],
         role: user.role,
       },
     });
@@ -47,6 +48,7 @@ export const getMe = async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      allowedLlms: user.allowedLlms || [],
       role: user.role,
     });
   } catch (err) {

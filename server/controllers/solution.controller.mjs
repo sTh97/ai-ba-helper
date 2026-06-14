@@ -1,13 +1,20 @@
 import Project from "../models/projects.mjs";
 import Story from "../models/story.model.mjs";
 import SolutionArchitecture from "../models/solutionArchitecture.model.mjs";
-import { callAI, getErrorMessage, getStructureAIOptions } from "./ai.controller.mjs";
+import { callAI, getErrorMessage, getDocumentAIOptions, getRefineAIOptions } from "./ai.controller.mjs";
 import { parseAIJson } from "../utils/aiParser.mjs";
 import {
   buildOwnerFilter,
   canAccessResource,
   hasDataAccessAll,
 } from "../utils/permissions.mjs";
+import {
+  generateArchitectureFile,
+  buildExportFilename,
+  FORMAT_META,
+} from "../utils/solutionExport.mjs";
+
+const VALID_FORMATS = ["pdf", "docx"];
 
 const truncate = (value, max = 200) => {
   const text = String(value || "").trim();
@@ -48,6 +55,37 @@ const summarizeStoriesForAI = (stories) =>
       .filter((f) => f.name),
     dependencies: (s.dependencies || []).slice(0, 3),
   }));
+
+const summarizeStoriesForArchitecture = (stories) => {
+  if (stories.length <= 20) return summarizeStoriesForAI(stories);
+
+  const byFeature = new Map();
+  for (const story of stories) {
+    const feature = (story.feature || "").trim() || "General";
+    if (!byFeature.has(feature)) byFeature.set(feature, []);
+    byFeature.get(feature).push(story);
+  }
+
+  return Array.from(byFeature.entries()).map(([feature, group]) => {
+    const fields = new Set();
+    const dependencies = new Set();
+    for (const story of group) {
+      for (const field of story.fields || []) {
+        if (field?.name) fields.add(field.name);
+      }
+      for (const dep of story.dependencies || []) {
+        if (dep) dependencies.add(String(dep).trim());
+      }
+    }
+    return {
+      feature,
+      storyCount: group.length,
+      examples: group.slice(0, 2).map((s) => truncate(s.correctedText || s.originalText, 120)),
+      fields: Array.from(fields).slice(0, 10),
+      dependencies: Array.from(dependencies).slice(0, 4),
+    };
+  });
+};
 
 const collectFeatures = (stories) => {
   const set = new Set();
@@ -110,20 +148,28 @@ Out of scope:
 
 The brief must steer the AI to recommend a concrete, justified technology stack and a viable technical design grounded in the product's real capabilities.`;
 
+    const storySummary = summarizeStoriesForArchitecture(stories);
+    const compact = stories.length > 20;
+
     const userPrompt = `Project: "${project.name}"
 ${project.description ? `Description: ${truncate(project.description, 300)}` : ""}
 
-Product capabilities (from user stories, ${stories.length}):
-${JSON.stringify(summarizeStoriesForAI(stories))}
+Product capabilities (${compact ? "grouped by feature" : "from user stories"}, ${stories.length} stories total):
+${JSON.stringify(storySummary)}
 
 Detected features: ${JSON.stringify(collectFeatures(stories))}
 
 Architect's rough notes:
 ${draftPrompt.trim()}
 
-Refine this into a comprehensive, actionable architecture brief another AI can follow.`;
+Refine this into a comprehensive, actionable architecture brief another AI can follow. Be thorough but concise — cover all major feature areas.`;
 
-    const refined = await callAI(systemPrompt, userPrompt, false, getStructureAIOptions({ maxTokens: 2048 }));
+    const refined = await callAI(
+      systemPrompt,
+      userPrompt,
+      false,
+      getRefineAIOptions(req.aiSelection),
+    );
 
     res.json({ refinedPrompt: refined.trim(), draftPrompt: draftPrompt.trim() });
   } catch (err) {
@@ -132,18 +178,21 @@ Refine this into a comprehensive, actionable architecture brief another AI can f
   }
 };
 
-const buildArchitectureContent = async (project, stories, prompt) => {
+const buildArchitectureContent = async (project, stories, prompt, aiSelection) => {
   const features = collectFeatures(stories);
+  const storySummary = summarizeStoriesForArchitecture(stories);
+  const compact = stories.length > 20;
 
   const systemPrompt = `You are a principal solution architect and staff engineer.
 You design pragmatic, modern, production-ready software architectures grounded in real product requirements.
-Return ONLY valid JSON — no markdown, no code fences.`;
+Return ONLY valid JSON — no markdown, no code fences.
+Keep mermaid diagrams concise (max 12 entities / 10 flow steps).`;
 
   const userPrompt = `Project / product: "${project.name}"
 ${project.description ? `Description: ${truncate(project.description, 400)}` : ""}
 
-Product capabilities (derived from user stories, ${stories.length}):
-${JSON.stringify(summarizeStoriesForAI(stories))}
+Product capabilities (${compact ? "grouped by feature" : "from user stories"}, ${stories.length} stories total):
+${JSON.stringify(storySummary)}
 
 Detected features: ${JSON.stringify(features)}
 
@@ -190,18 +239,26 @@ Design the solution architecture. Return JSON ONLY with this exact shape:
 
 Rules:
 - Recommend a concrete, justified, modern stack — no vague "a database" answers.
-- featureLinkages MUST cover the detected features (or logical features derived from the stories) and show how they connect/depend on each other.
-- schemas MUST reflect the real data fields implied by the user stories.
+- featureLinkages: ONE entry per unique detected feature (not one per story). Cover all features listed above.
+- schemas: 6-12 core entities max with the most important fields only.
 - erd.mermaid MUST be valid Mermaid "erDiagram" syntax. workflow.mermaid MUST be valid Mermaid "flowchart TD" syntax. Escape newlines as \\n inside the JSON strings.
-- Keep entity/relationship names consistent between schemas, erd, and featureLinkages.`;
+- Keep entity/relationship names consistent between schemas, erd, and featureLinkages.
+- Return COMPLETE valid JSON — do not truncate mid-response.`;
 
   let lastError = "Response was not valid JSON";
   let lastRaw = "";
-  for (let attempt = 0; attempt <= 2; attempt++) {
+  let aiOptions = getDocumentAIOptions(aiSelection);
+
+  for (let attempt = 0; attempt <= 3; attempt++) {
     const promptText = attempt === 0
       ? userPrompt
-      : `${userPrompt}\n\nYour previous response was invalid JSON (${lastError}). Return ONLY valid JSON matching the shape.`;
-    lastRaw = await callAI(systemPrompt, promptText, true, getStructureAIOptions({ maxTokens: 4000 }));
+      : `${userPrompt}\n\nYour previous response was invalid or truncated (${lastError}). Return ONLY complete valid JSON matching the shape. Be concise in mermaid strings if needed.`;
+
+    if (attempt > 1) {
+      aiOptions = getDocumentAIOptions(aiSelection, { maxTokens: Math.min((aiOptions.maxTokens || 8192) * 2, 16384) });
+    }
+
+    lastRaw = await callAI(systemPrompt, promptText, true, aiOptions);
     try {
       const parsed = parseAIJson(lastRaw);
       const content = parsed.content || parsed;
@@ -233,7 +290,7 @@ export const generateSolutionArchitecture = async (req, res) => {
       return res.status(400).json({ error: "Select at least one user story to generate an architecture" });
     }
 
-    const content = await buildArchitectureContent(project, stories, prompt);
+    const content = await buildArchitectureContent(project, stories, prompt, req.aiSelection);
 
     res.json({
       projectId,
@@ -348,5 +405,43 @@ export const deleteSolution = async (req, res) => {
     res.json({ message: "Solution architecture deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+export const exportSolution = async (req, res) => {
+  try {
+    const { id, content: inlineContent, name: inlineName, format = "pdf" } = req.body;
+    if (!VALID_FORMATS.includes(format)) {
+      return res.status(400).json({ error: "Invalid format" });
+    }
+
+    let content = inlineContent;
+    let name = inlineName;
+
+    if (id) {
+      const item = await SolutionArchitecture.findById(id);
+      if (!item) return res.status(404).json({ error: "Solution architecture not found" });
+      if (!canAccessResource(req.user, "solution", item)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      content = item.content;
+      name = name || item.name;
+    }
+
+    if (!content || (!content.title && !content.techStack && !content.schemas)) {
+      return res.status(400).json({ error: "No architecture content to export" });
+    }
+
+    const buffer = await generateArchitectureFile(content, format);
+    const meta = FORMAT_META[format];
+    const filename = buildExportFilename(name || content.title || "solution-architecture", format);
+
+    res.setHeader("Content-Type", meta.mime);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Length", buffer.length);
+    res.send(buffer);
+  } catch (err) {
+    console.error("Export solution architecture error:", err.message);
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 };

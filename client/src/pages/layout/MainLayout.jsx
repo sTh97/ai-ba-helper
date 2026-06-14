@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme, THEMES } from "../../context/ThemeContext";
+import { useLLM, getTierStyle } from "../../context/LLMContext";
 import ChangePasswordModal from "../../components/ChangePasswordModal";
 
 const THEME_SWATCHES = {
@@ -10,7 +11,21 @@ const THEME_SWATCHES = {
   alien: ["#030612", "#39ff14"],
 };
 
-const AI_MODEL = "Mistral 7B";
+
+const TierBadge = ({ tier, tierLabel }) => {
+  const style = getTierStyle(tier);
+  return (
+    <span style={{
+      fontSize: 9, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase",
+      padding: "2px 6px", borderRadius: 99, flexShrink: 0,
+      color: style.color,
+      background: `color-mix(in srgb, ${style.color} 16%, transparent)`,
+      border: `1px solid color-mix(in srgb, ${style.color} 30%, transparent)`,
+    }}>
+      {tierLabel || style.label}
+    </span>
+  );
+};
 
 const ROUTE_TITLES = {
   "/dashboard": "Dashboard",
@@ -59,12 +74,16 @@ const LogoMark = ({ size = 28 }) => (
 const MainLayout = () => {
   const { user, logout, hasPermission } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { configuredModels, selectedModel, selectedId, setSelectedId, loading: llmLoading } = useLLM();
+  const modelDisplayLabel = selectedModel?.label
+    || (selectedId ? selectedId.replace(/^[^:]+:/, "").replace(/-/g, " ") : "Not configured");
   const navigate = useNavigate();
   const location = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [collapsed, setCollapsed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [showLLMMenu, setShowLLMMenu] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1400);
   const headerRef = useRef(null);
@@ -89,6 +108,7 @@ const MainLayout = () => {
       if (headerRef.current && !headerRef.current.contains(e.target)) {
         setShowMenu(false);
         setShowThemeMenu(false);
+        setShowLLMMenu(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -158,7 +178,7 @@ const MainLayout = () => {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <LogoMark />
             <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 15, color: "var(--text-primary)", letterSpacing: "-0.3px" }}>
-              BA&nbsp;Helper
+              Requify
             </span>
           </div>
           {breadcrumb && !isMobile && (
@@ -172,6 +192,20 @@ const MainLayout = () => {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
+          {isMobile && selectedModel && (
+            <button
+              type="button"
+              onClick={() => { setShowLLMMenu((s) => !s); setShowMenu(false); setShowThemeMenu(false); }}
+              style={{
+                padding: "4px 8px", borderRadius: 99, maxWidth: 140,
+                background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                fontSize: 10, color: "var(--text-secondary)", cursor: "pointer",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}
+            >
+              {selectedModel.label}
+            </button>
+          )}
           {!isMobile && (
             <div className="ba-mono" style={{
               padding: "4px 12px", borderRadius: 99,
@@ -284,6 +318,50 @@ const MainLayout = () => {
               </button>
             </div>
           )}
+          {showLLMMenu && isMobile && (
+            <div style={{
+              position: "fixed", inset: 0, zIndex: 200,
+              background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end",
+            }} onClick={() => setShowLLMMenu(false)}>
+              <div style={{
+                width: "100%", maxHeight: "70vh", overflowY: "auto",
+                background: "var(--bg-surface)", borderTop: "1px solid var(--border)",
+                borderRadius: "16px 16px 0 0", padding: "12px 0 24px",
+              }} onClick={(e) => e.stopPropagation()}>
+                <div style={{ padding: "8px 16px 12px", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                  Choose AI Model
+                </div>
+                <div style={{ padding: "0 16px 10px", fontSize: 11, color: "var(--text-muted)" }}>
+                  Providers configured in server/.env
+                </div>
+                {configuredModels.map((model) => {
+                  const active = model.id === selectedId;
+                  return (
+                    <button
+                      key={model.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedId(model.id);
+                        setShowLLMMenu(false);
+                      }}
+                      style={{
+                        width: "100%", padding: "12px 16px", background: active ? "var(--accent-soft)" : "none",
+                        border: "none", borderTop: "1px solid var(--border)",
+                        cursor: "pointer", textAlign: "left",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, flex: 1, color: active ? "var(--accent)" : "var(--text-primary)" }}>{model.label}</span>
+                        <TierBadge tier={model.tier} tierLabel={model.tierLabel} />
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{model.tierDetail}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -300,7 +378,7 @@ const MainLayout = () => {
             padding: "14px 0 0",
             display: "flex", flexDirection: "column",
             transition: "width 0.22s cubic-bezier(.4,0,.2,1)",
-            overflow: "hidden",
+            overflow: "visible",
             flexShrink: 0,
             position: "sticky", top: 56, height: "calc(100vh - 56px)",
           }}>
@@ -365,22 +443,110 @@ const MainLayout = () => {
             </nav>
 
             <div style={{
-              borderTop: "1px solid var(--border)", padding: sidebarCollapsed ? "12px 0" : "12px 16px",
-              display: "flex", alignItems: "center", gap: 8,
-              justifyContent: sidebarCollapsed ? "center" : "flex-start",
-            }} title={`AI model: ${AI_MODEL}`}>
-              <span style={{
-                width: 6, height: 6, borderRadius: 99, flexShrink: 0,
-                background: "var(--green)", boxShadow: "0 0 6px var(--green)",
-              }} />
-              {!sidebarCollapsed && (
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.6px", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                    Model
+              borderTop: "1px solid var(--border)",
+              padding: sidebarCollapsed ? "12px 0" : "12px 10px",
+              position: "relative",
+              zIndex: 20,
+              flexShrink: 0,
+            }}>
+              <button
+                type="button"
+                onClick={() => { if (!sidebarCollapsed) setShowLLMMenu((s) => !s); }}
+                title={selectedModel ? `AI model: ${selectedModel.label}` : `AI model: ${modelDisplayLabel}`}
+                style={{
+                  width: "100%",
+                  display: "flex", alignItems: "center", gap: 8,
+                  justifyContent: sidebarCollapsed ? "center" : "flex-start",
+                  padding: sidebarCollapsed ? "4px 0" : "8px 6px",
+                  background: showLLMMenu ? "var(--bg-elevated)" : "none",
+                  border: "none", borderRadius: "var(--radius)", cursor: sidebarCollapsed ? "default" : "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <span style={{
+                  width: 6, height: 6, borderRadius: 99, flexShrink: 0,
+                  background: selectedModel?.tier === "paid" ? "var(--orange, #f97316)" : "var(--green)",
+                  boxShadow: selectedModel?.tier === "paid"
+                    ? "0 0 6px var(--orange, #f97316)"
+                    : "0 0 6px var(--green)",
+                }} />
+                {!sidebarCollapsed && (
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.6px", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                        AI Model
+                      </div>
+                      {selectedModel && <TierBadge tier={selectedModel.tier} tierLabel={selectedModel.tierLabel} />}
+                    </div>
+                    <div className="ba-mono" style={{ fontSize: 11, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {llmLoading ? "Loading…" : modelDisplayLabel}
+                    </div>
                   </div>
-                  <div className="ba-mono" style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-                    {AI_MODEL}
+                )}
+                {!sidebarCollapsed && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ flexShrink: 0, transform: showLLMMenu ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                )}
+              </button>
+
+              {showLLMMenu && !sidebarCollapsed && (
+                <div
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                  position: "absolute", bottom: "100%", left: 8, right: 8, marginBottom: 6,
+                  maxHeight: 320, overflowY: "auto",
+                  background: "var(--bg-surface)", border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)", padding: "6px 0",
+                  boxShadow: "0 -8px 32px rgba(0,0,0,0.35)", zIndex: 100,
+                }}>
+                  <div style={{ padding: "6px 12px 8px", fontSize: 11, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    Choose AI Model
                   </div>
+                  <div style={{ padding: "0 12px 8px", fontSize: 10, color: "var(--text-muted)", lineHeight: 1.4 }}>
+                    Only providers with API keys in server/.env are listed. Free models cost nothing; paid models bill per use.
+                  </div>
+                  {configuredModels.length === 0 && (
+                    <div style={{ padding: "8px 12px", fontSize: 11, color: "var(--red)" }}>
+                      No AI providers configured. Add API keys to server/.env and restart the server.
+                    </div>
+                  )}
+                  {configuredModels.map((model) => {
+                    const active = model.id === selectedId;
+                    return (
+                      <button
+                        key={model.id}
+                        type="button"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setSelectedId(model.id);
+                          setShowLLMMenu(false);
+                        }}
+                        style={{
+                          width: "100%", padding: "10px 12px", background: active ? "var(--accent-soft)" : "none",
+                          border: "none", cursor: "pointer", textAlign: "left",
+                          borderTop: "1px solid var(--border)",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--accent)" : "var(--text-primary)", flex: 1 }}>
+                            {model.label}
+                          </span>
+                          <TierBadge tier={model.tier} tierLabel={model.tierLabel} />
+                          {active && <span style={{ fontSize: 11, color: "var(--accent)" }}>✓</span>}
+                        </div>
+                        <div style={{ fontSize: 10, color: "var(--text-muted)", lineHeight: 1.35, marginBottom: 2 }}>
+                          {model.description}
+                        </div>
+                        <div style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+                          {model.tierDetail}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

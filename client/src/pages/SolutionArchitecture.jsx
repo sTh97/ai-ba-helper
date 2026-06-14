@@ -27,6 +27,11 @@ const PROMPT_SUGGESTIONS = [
   "Prefer a TypeScript stack with PostgreSQL.",
 ];
 
+const FORMATS = [
+  { value: "pdf", label: "PDF", hint: "Formatted architecture document" },
+  { value: "docx", label: "Word", hint: "Editable .docx document" },
+];
+
 const storyPreview = (story) => story.correctedText || story.originalText || "";
 
 const SolutionArchitecture = () => {
@@ -51,6 +56,7 @@ const SolutionArchitecture = () => {
   const [generating, setGenerating] = useState(false);
   const [refining, setRefining] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState("");
 
   const [generated, setGenerated] = useState(null);
 
@@ -248,11 +254,45 @@ const SolutionArchitecture = () => {
     setShowDialog(true);
   };
 
+  const downloadFile = async ({ id, content, name: dlName, format: dlFormat }) => {
+    setDownloading(dlFormat + (id || "current"));
+    try {
+      const res = await axios.post(
+        "/solutions/export",
+        { id, content, name: dlName, format: dlFormat },
+        { responseType: "blob" }
+      );
+      const disposition = res.headers["content-disposition"] || "";
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      const filename = match ? match[1] : `solution-architecture.${dlFormat}`;
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      showToast("Failed to download file", "error");
+    } finally {
+      setDownloading("");
+    }
+  };
+
+  const downloadGenerated = (fmt) =>
+    downloadFile({
+      id: generated?._id || undefined,
+      content: generated?._id ? undefined : generated?.content,
+      name: name || generated?.name,
+      format: fmt,
+    });
+
   return (
     <div className="ba-page" style={{ maxWidth: 980, margin: "0 auto" }}>
       <PageHeader
         title="Solution Architecture"
-        subtitle="Pick a project and its user stories, describe constraints, and let AI design the tech stack, technical viability, feature linkage, schemas, ERD, and project workflow"
+        subtitle="Pick a project and its user stories, describe constraints, and let AI design the tech stack, technical viability, feature linkage, schemas, ERD, and project workflow — export as PDF or Word"
       />
 
       <div style={{
@@ -403,6 +443,17 @@ const SolutionArchitecture = () => {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
+                  {FORMATS.map((f) => (
+                    <button
+                      key={f.value}
+                      onClick={() => downloadFile({ id: p._id, name: p.name, format: f.value })}
+                      disabled={downloading === f.value + p._id}
+                      style={smallBtnStyle("yellow")}
+                      title={`Download as ${f.label}`}
+                    >
+                      {downloading === f.value + p._id ? "…" : f.label}
+                    </button>
+                  ))}
                   <button onClick={() => loadSaved(p)} style={smallBtnStyle("accent")}>Open</button>
                   {canDelete && (
                     <ConfirmButton onConfirm={() => handleDeleteSaved(p._id)} label="Delete" />
@@ -438,7 +489,21 @@ const SolutionArchitecture = () => {
                 {...focusHandlers}
               />
             </div>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600 }}>Download:</span>
+                {FORMATS.map((f) => (
+                  <button
+                    key={f.value}
+                    onClick={() => downloadGenerated(f.value)}
+                    disabled={Boolean(downloading)}
+                    style={dialogBtnStyle("yellow", Boolean(downloading))}
+                    title={f.hint}
+                  >
+                    {downloading.startsWith(f.value) ? "Preparing…" : `⬇ ${f.label}`}
+                  </button>
+                ))}
+              </div>
               {canCreate && (
                 <button onClick={openRegenerate} style={dialogBtnStyle("accentSoft")}>
                   ✨ Edit & Regenerate
@@ -932,9 +997,29 @@ const dialogBtnStyle = (variant, disabled = false) => ({
 
 const smallBtnStyle = (variant) => ({
   padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
-  background: variant === "red" ? "var(--red-soft)" : variant === "muted" ? "var(--bg-elevated)" : "var(--accent-soft)",
-  border: `1px solid ${variant === "red" ? "var(--red)22" : variant === "muted" ? "var(--border)" : "var(--accent)22"}`,
-  color: variant === "red" ? "var(--red)" : variant === "muted" ? "var(--text-secondary)" : "var(--accent)",
+  background: variant === "red"
+    ? "var(--red-soft)"
+    : variant === "yellow"
+      ? "var(--yellow-soft, rgba(234,179,8,0.18))"
+      : variant === "muted"
+        ? "var(--bg-elevated)"
+        : "var(--accent-soft)",
+  border: `1px solid ${
+    variant === "red"
+      ? "var(--red)22"
+      : variant === "yellow"
+        ? "rgba(234,179,8,0.35)"
+        : variant === "muted"
+          ? "var(--border)"
+          : "var(--accent)22"
+  }`,
+  color: variant === "red"
+    ? "var(--red)"
+    : variant === "yellow"
+      ? "var(--yellow)"
+      : variant === "muted"
+        ? "var(--text-secondary)"
+        : "var(--accent)",
 });
 
 export default SolutionArchitecture;

@@ -11,10 +11,12 @@ import {
   exportCollateral,
 } from "../controllers/marketing.controller.mjs";
 import { authenticate, authorize } from "../middleware/auth.middleware.mjs";
+import { attachAISelection } from "../middleware/aiSelection.middleware.mjs";
 
 const router = express.Router();
 
 router.use(authenticate);
+router.use(attachAISelection);
 
 router.get("/project/:projectId/stories", authorize("marketing", "read"), getProjectStoriesPreview);
 router.post("/prompt/refine", authorize("marketing", "create"), refineMarketingPrompt);

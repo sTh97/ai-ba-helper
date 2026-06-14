@@ -1,11 +1,14 @@
 import express from "express";
-import { enhanceStory, generateUI } from "../controllers/ai.controller.mjs";
+import { enhanceStory, generateUI, listModels } from "../controllers/ai.controller.mjs";
 import { authenticate, authorize } from "../middleware/auth.middleware.mjs";
+import { attachAISelection } from "../middleware/aiSelection.middleware.mjs";
 
 const router = express.Router();
 
 router.use(authenticate);
+router.use(attachAISelection);
 
+router.get("/models", listModels);
 router.post("/enhance", authorize("ai", "create"), enhanceStory);
 router.post("/generate-ui", authorize("ai", "create"), generateUI);
 

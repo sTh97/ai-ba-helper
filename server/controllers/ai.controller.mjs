@@ -7,9 +7,14 @@ import {
 import { extractMessageContent } from "../utils/openrouter.mjs";
 import { buildFullDocument, sanitizePrototypeCode } from "../utils/prototypeBuilder.mjs";
 import { isLargeContent, splitContentForAI } from "../utils/contentChunker.mjs";
+import { listAvailableModels } from "../constants/llmCatalog.mjs";
+import { filterModelsForUser } from "../utils/llmAccess.mjs";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6";
+const ANTHROPIC_TIMEOUT_MS = Number(process.env.ANTHROPIC_TIMEOUT_MS) || 180000;
 const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
 const DEFAULT_OLLAMA_MODEL = "gemma4:31b-cloud";
 const DEFAULT_OLLAMA_STRUCTURE_MODEL = "gemma4:31b-cloud";
@@ -34,7 +39,33 @@ const getPrototypeAIProvider = () =>
 
 const isOllama = (provider = getAIProvider()) => provider === "ollama";
 const isGroq = (provider = getAIProvider()) => provider === "groq";
+const isAnthropic = (provider = getAIProvider()) => provider === "anthropic";
 const isPrototypeGroq = () => isGroq(getPrototypeAIProvider());
+
+export const withRequestSelection = (req, options = {}) => {
+  const selection = req?.aiSelection;
+  if (!selection?.provider) return options;
+  return {
+    ...options,
+    provider: selection.provider,
+    models: selection.models?.length ? selection.models : options.models,
+    selectionId: selection.id,
+  };
+};
+
+export const selectionToOptions = (selection, options = {}) => {
+  if (!selection?.provider) return options;
+  return {
+    ...options,
+    provider: selection.provider,
+    models: selection.models?.length ? selection.models : options.models,
+    selectionId: selection.id,
+  };
+};
+
+export const listModels = (req, res) => {
+  res.json(filterModelsForUser(listAvailableModels(), req.user));
+};
 
 const getOllamaChatUrl = () => {
   const base = (process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1").replace(/\/$/, "");
@@ -101,13 +132,23 @@ const getAIRequestConfig = (provider = getAIProvider()) => {
       },
     };
   }
+  if (isAnthropic(provider)) {
+    return {
+      url: ANTHROPIC_URL,
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+    };
+  }
   return {
     url: OPENROUTER_URL,
     headers: {
       Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
       "Content-Type": "application/json",
       "HTTP-Referer": "http://localhost:5000",
-      "X-Title": "BA Helper",
+      "X-Title": "Requify",
     },
   };
 };
@@ -118,10 +159,74 @@ const getActiveOllamaModel = (ui = false) => getOllamaModel(ui);
 
 const usesOllamaCloud = (ui = false) => isOllama() && isOllamaCloudModel(getActiveOllamaModel(ui));
 
-const getDefaultTimeout = (ui = false) => {
+const getDefaultTimeout = (ui = false, provider = getAIProvider()) => {
+  if (isAnthropic(provider)) return ANTHROPIC_TIMEOUT_MS;
   if (usesOllamaCloud(ui)) return OLLAMA_CLOUD_TIMEOUT_MS;
-  if (isOllama()) return OLLAMA_TIMEOUT_MS;
+  if (isOllama(provider)) return OLLAMA_TIMEOUT_MS;
   return ui ? 120000 : REQUEST_TIMEOUT_MS;
+};
+
+const extractAnthropicContent = (data) => {
+  const blocks = data?.content;
+  if (!Array.isArray(blocks)) return null;
+  const text = blocks
+    .filter((block) => block?.type === "text" && block.text)
+    .map((block) => block.text)
+    .join("");
+  return text.trim() || null;
+};
+
+const callAnthropic = async (systemPrompt, userPrompt, useJsonMode, options) => {
+  const { headers, url } = getAIRequestConfig("anthropic");
+  const model = options.models?.[0] || process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_ANTHROPIC_MODEL;
+  const timeout = options.timeout || ANTHROPIC_TIMEOUT_MS;
+  const maxCap = /opus|sonnet/i.test(model) ? 16384 : 8192;
+  let maxTokens = Math.min(options.maxTokens || 4096, maxCap);
+
+  let system = systemPrompt;
+  if (useJsonMode) {
+    system += "\n\nRespond with valid JSON only. No markdown fences or extra text.";
+  }
+
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    const body = {
+      model,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: userPrompt }],
+      temperature: 0.2,
+    };
+
+    const response = await postWithRetry(url, body, { headers, timeout });
+
+    if (response.data?.stop_reason === "max_tokens") {
+      const partial = extractAnthropicContent(response.data);
+      if (attempt < 2 && maxTokens < maxCap) {
+        maxTokens = Math.min(maxTokens * 2, maxCap);
+        console.warn(`Anthropic truncated (${model}) — retrying with max_tokens=${maxTokens}`);
+        continue;
+      }
+      if (partial?.trim()) {
+        console.warn(`Anthropic truncated (${model}) — returning partial response`);
+        return partial;
+      }
+      const err = new Error("Response truncated — increase max_tokens and retry");
+      err.retryable = true;
+      err.truncated = true;
+      throw err;
+    }
+
+    const content = extractAnthropicContent(response.data);
+    if (!content) {
+      const err = new Error("Empty response from Anthropic");
+      err.retryable = true;
+      throw err;
+    }
+    console.log(`AI call OK — anthropic, model: ${model}${useJsonMode ? " (json)" : ""} max_tokens=${maxTokens}`);
+    return content;
+  }
+
+  throw new Error("Anthropic request failed after retries");
 };
 
 const getContentChunks = (content) => {
@@ -282,6 +387,32 @@ export const getStructureAIOptions = (overrides = {}) => {
   };
 };
 
+export const getDocumentAIOptions = (selection, overrides = {}) => {
+  const merged = selectionToOptions(selection, getStructureAIOptions({ fastMode: false, ...overrides }));
+  const provider = merged.provider || getAIProvider();
+  const model = merged.models?.[0] || "";
+  let maxTokens = 8192;
+  if (isAnthropic(provider)) {
+    maxTokens = /opus|sonnet/i.test(model) ? 16384 : 8192;
+  } else if (isGroq(provider)) {
+    maxTokens = 8192;
+  } else if (isOllama(provider)) {
+    maxTokens = 8192;
+  }
+  const timeout = isAnthropic(provider)
+    ? Math.max(ANTHROPIC_TIMEOUT_MS, 300000)
+    : Math.max(Number(merged.timeout) || 0, 300000);
+  return {
+    ...merged,
+    maxTokens: overrides.maxTokens ?? maxTokens,
+    fastMode: false,
+    timeout,
+  };
+};
+
+export const getRefineAIOptions = (selection, overrides = {}) =>
+  getDocumentAIOptions(selection, { maxTokens: 8192, ...overrides });
+
 const getOllamaScreenModel = () =>
   process.env.OLLAMA_SCREEN_MODEL?.trim()
   || process.env.OLLAMA_UI_MODEL?.trim()
@@ -392,10 +523,28 @@ const postWithRetry = async (url, body, config, { maxRetries = 4 } = {}) => {
 };
 
 export const callAI = async (systemPrompt, userPrompt, useJsonMode = true, options = {}) => {
-  const maxTokens = options.maxTokens || 4096;
-  const timeout = options.timeout || getDefaultTimeout();
-  const models = options.models || getModelsToTry();
   const provider = options.provider || getAIProvider();
+  const maxTokens = options.maxTokens || 4096;
+  const timeout = options.timeout || getDefaultTimeout(false, provider);
+  const models = options.models || getModelsToTry();
+
+  if (isAnthropic(provider)) {
+    try {
+      return await callAnthropic(systemPrompt, userPrompt, useJsonMode, { ...options, models, maxTokens, timeout });
+    } catch (err) {
+      const msg = getErrorMessage(err);
+      if (isFatalError(err)) throw err;
+      if (/401|403|invalid.*key|authentication/i.test(msg)) {
+        throw new Error("Anthropic API key is invalid or missing. Set ANTHROPIC_API_KEY in server/.env.");
+      }
+      if (/model|not_found|deprecated|retired/i.test(msg)) {
+        const model = options.models?.[0] || "unknown";
+        throw new Error(`Anthropic model "${model}" is invalid or retired. Update the model in llmCatalog.mjs or ANTHROPIC_MODEL in server/.env. Detail: ${msg}`);
+      }
+      throw new Error(`Anthropic request failed: ${msg}`);
+    }
+  }
+
   const { url, headers } = getAIRequestConfig(provider);
   const errors = [];
 
@@ -443,7 +592,7 @@ export const callAI = async (systemPrompt, userPrompt, useJsonMode = true, optio
           throw err;
         }
 
-        const providerLabel = isOllama(provider) ? "ollama" : isGroq(provider) ? "groq" : "openrouter";
+        const providerLabel = isOllama(provider) ? "ollama" : isGroq(provider) ? "groq" : isAnthropic(provider) ? "anthropic" : "openrouter";
         console.log(`AI call OK — ${providerLabel}, model: ${model}${withJson ? " (json)" : ""}${withReasoningExclude ? " (no-reasoning)" : ""}`);
         return content;
       } catch (err) {
@@ -471,7 +620,7 @@ export const callAI = async (systemPrompt, userPrompt, useJsonMode = true, optio
     }
   }
 
-  const providerLabel = isOllama(provider) ? "Ollama" : isGroq(provider) ? "Groq" : "OpenRouter";
+  const providerLabel = isOllama(provider) ? "Ollama" : isGroq(provider) ? "Groq" : isAnthropic(provider) ? "Anthropic" : "OpenRouter";
   const summary = errors.length > 0
     ? `All AI models failed. ${errors.join(" | ")}`
     : `No AI models available on ${providerLabel}`;
@@ -485,7 +634,9 @@ export const callAI = async (systemPrompt, userPrompt, useJsonMode = true, optio
     message = "Groq API key is invalid or missing. Set GROQ_API_KEY in server/.env.";
   } else if (isGroq(provider) && errors.some((entry) => /rate limit|429/i.test(entry))) {
     message = "Groq rate limit reached. Wait a moment and try again, or reduce PROTOTYPE_SCREEN_CONCURRENCY.";
-  } else if (!isOllama(provider) && !isGroq(provider) && isFreeQuotaExhausted(errors)) {
+  } else if (isAnthropic(provider) && errors.some((entry) => /401|403|invalid api key/i.test(entry))) {
+    message = "Anthropic API key is invalid or missing. Set ANTHROPIC_API_KEY in server/.env.";
+  } else if (!isOllama(provider) && !isGroq(provider) && !isAnthropic(provider) && isFreeQuotaExhausted(errors)) {
     message = "OpenRouter free daily quota is exhausted or unavailable. Add credits at https://openrouter.ai/settings/credits or try again tomorrow.";
   }
 
@@ -594,8 +745,8 @@ export const enhanceStory = async (req, res) => {
 
   try {
     const chunks = getContentChunks(content);
-    const enhanceOptions = getEnhanceAIOptions();
-    const model = getActiveOllamaModel();
+    const enhanceOptions = withRequestSelection(req, getEnhanceAIOptions());
+    const model = enhanceOptions.models?.[0] || getActiveOllamaModel();
 
     if (chunks.length > 1) {
       console.log(`Large content (${content.length} chars) — processing ${chunks.length} sections via Ollama (${model})`);
@@ -797,7 +948,7 @@ ${feature && String(feature).trim() ? `Feature / module: ${String(feature).trim(
     userPrompt += `\nGenerate a polished web UI wireframe.`;
   }
 
-  const uiOptions = getUIAIOptions();
+  const uiOptions = withRequestSelection(req, getUIAIOptions());
   let lastRaw = "";
   let lastError = "Response was not valid JSON";
 

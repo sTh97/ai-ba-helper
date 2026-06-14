@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI BA Helper — Technical Overview</title>
+<title>Requify — Technical Overview</title>
 <style>
   :root {
     --ink: #1a2233;
@@ -270,7 +270,7 @@
 <!-- ==================== COVER ==================== -->
 <div class="cover">
   <div class="eyebrow">Technical Overview</div>
-  <h1>AI&nbsp;BA&nbsp;Helper</h1>
+  <h1>Requify</h1>
   <div class="sub">An AI-assisted Business Analyst platform that turns raw requirements into user stories, wireframes, clickable multi-screen prototypes, marketing collateral, and solution architecture.</div>
   <div class="pillrow">
     <span class="pill">React 19 + Vite</span>
@@ -314,7 +314,7 @@
 <section class="chapter" id="s1">
   <h2>1 &nbsp; Executive Summary</h2>
   <div class="lead">
-    AI BA Helper is a full-stack web application that compresses the early discovery work of a Business
+    Requify is a full-stack web application that compresses the early discovery work of a Business
     Analyst. A user pastes or uploads raw requirements, and the system uses Large Language Models to produce
     structured, review-ready artifacts: user stories with acceptance criteria and tests, UI wireframes,
     interactive multi-screen HTML prototypes, marketing collateral, and solution-architecture documents.
@@ -323,7 +323,7 @@
   <h3>1.1 &nbsp; Problem it solves</h3>
   <p>
     Translating stakeholder requirements into well-formed user stories, mockups, and supporting documents is
-    slow, repetitive, and inconsistent. AI BA Helper standardizes the output (a fixed story schema with
+    slow, repetitive, and inconsistent. Requify standardizes the output (a fixed story schema with
     acceptance criteria, business rules, validations, fields, Definition of Ready / Done) and automates the
     generation of visual artifacts directly from those stories.
   </p>
@@ -437,7 +437,7 @@
 <section class="chapter" id="s4">
   <h2>4 &nbsp; Architecture Overview</h2>
   <p>
-    AI BA Helper follows a classic decoupled SPA + REST API architecture, with a third dependency tier for AI
+    Requify follows a classic decoupled SPA + REST API architecture, with a third dependency tier for AI
     providers. The React client talks to the Express API exclusively over JSON; the API persists to MongoDB and
     proxies all model calls to a configurable AI provider.
   </p>

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Generates the AI BA Helper technical overview PDF from a styled HTML source.",
+  "description": "Generates the Requify technical overview PDF from a styled HTML source.",
   "scripts": {
     "build": "node generate-pdf.mjs"
   },

@@ -8,6 +8,7 @@ import {
   getPrototypeScreenConcurrency,
   getScreenAIOptions,
   getStructureAIOptions,
+  selectionToOptions,
 } from "../controllers/ai.controller.mjs";
 import { parseAIJson } from "../utils/aiParser.mjs";
 import { planPrototypeChunks } from "../utils/prototypeChunker.mjs";
@@ -142,7 +143,10 @@ const parseAIWithRetries = async (systemPrompt, userPrompt, options = {}, maxRet
   throw err;
 };
 
-const generateDesignTheme = async (prototypePrompt, stories, projectName, domain) => {
+const withJobSelection = (aiSelection, factory, overrides = {}) =>
+  selectionToOptions(aiSelection, factory(overrides));
+
+const generateDesignTheme = async (prototypePrompt, stories, projectName, domain, aiSelection = null) => {
   const fallback = heuristicTheme(prototypePrompt || "", projectName || "");
   const storyText = (stories || [])
     .slice(0, 8)
@@ -189,7 +193,7 @@ Rules:
     const parsed = await parseAIWithRetries(
       systemPrompt,
       userPrompt,
-      getStructureAIOptions({ maxTokens: 700 }),
+      withJobSelection(aiSelection, getStructureAIOptions, { maxTokens: 700 }),
       1
     );
     const raw = parsed.theme || parsed;
@@ -294,7 +298,7 @@ const defaultPrototypeName = (stories, projectName, customName) => {
 const isWeakScreenHtml = (html, css = "") =>
   isAmateurScreenOutput(sanitizePrototypeCode(html || ""), css);
 
-const generateScreenHtml = async (screen, screenIndex, stories, structure, brief, projectName, domain = "general", theme = null) => {
+const generateScreenHtml = async (screen, screenIndex, stories, structure, brief, projectName, domain = "general", theme = null, aiSelection = null) => {
   const screenStories = stories.filter((s) =>
     (screen.mappedStoryIds || []).includes(s._id.toString())
   );
@@ -363,7 +367,7 @@ QUALITY BAR (reject-level if violated):
       const prompt = attempt === 1
         ? userPrompt
         : `${userPrompt}\n\nNOTE: A previous attempt was rejected for being too sparse/generic. Produce a richer, fully fleshed-out, theme-specific screen with real domain content.`;
-      const parsed = await parseAIWithRetries(systemPrompt, prompt, getScreenAIOptions(), 2);
+      const parsed = await parseAIWithRetries(systemPrompt, prompt, withJobSelection(aiSelection, getScreenAIOptions), 2);
       const html = parsed.html || parsed.prototype?.html || "";
       const css = parsed.css || parsed.prototype?.css || "";
       const js = parsed.js || parsed.prototype?.js || "";
@@ -409,7 +413,7 @@ export const runGenerateJob = async (jobId) => {
 
     const brief = buildCustomPromptBlock(job.prototypePrompt);
     const domain = inferApplicationDomain(job.prototypePrompt, stories, project.name);
-    const theme = await generateDesignTheme(job.prototypePrompt, stories, project.name, domain);
+    const theme = await generateDesignTheme(job.prototypePrompt, stories, project.name, domain, job.aiSelection);
     const { structure: initialStructure, chunks } = planPrototypeChunks(
       stories,
       project.name,
@@ -504,7 +508,7 @@ ${structureRules}`;
         structureParsed = await parseAIWithRetries(
           structureSystemPrompt,
           structureUserPrompt,
-          getStructureAIOptions(),
+          withJobSelection(jobDoc.aiSelection, getStructureAIOptions),
           1
         );
         if (isValidStructure(structureParsed.structure) && !isStoryDerivedStructure(structureParsed.structure)) {
@@ -585,7 +589,7 @@ ${structureRules}`;
 
       const screenIndex = structure.screens.indexOf(screen);
       const result = await generateScreenHtml(
-        screen, screenIndex, stories, structure, brief, project.name, domain, theme
+        screen, screenIndex, stories, structure, brief, project.name, domain, theme, job.aiSelection
       );
 
       screenChunks.push(result);
@@ -784,7 +788,7 @@ Rules:
 
       let result;
       try {
-        const parsed = await parseAIWithRetries(systemPrompt, userPrompt, getScreenAIOptions(), 1);
+        const parsed = await parseAIWithRetries(systemPrompt, userPrompt, withJobSelection(job.aiSelection, getScreenAIOptions), 1);
         const html = parsed.html || "";
         if (html.includes("section") || html.includes("data-screen")) {
           result = { screenId: screen.id, html, css: parsed.css || "", js: parsed.js || "", usedScaffold: false };
@@ -884,7 +888,7 @@ ${text}
 === END UPDATE REQUEST ===`;
 };
 
-const updateScreenHtml = async (screen, screenIndex, existingHtml, structure, updateBrief, originalBrief, domain = "general", theme = null) => {
+const updateScreenHtml = async (screen, screenIndex, existingHtml, structure, updateBrief, originalBrief, domain = "general", theme = null, aiSelection = null) => {
   const screenType = screen.screenType || detectScreenType(screen);
   const screenRole = screen.role || detectScreenRole(screen);
   const designGuide = getDesignSystemPrompt(screenType, screenRole, domain, theme);
@@ -920,7 +924,7 @@ Rules:
 - css: prefer empty; if needed, scope under [data-screen="${screen.id}"] only.`;
 
   try {
-    const parsed = await parseAIWithRetries(systemPrompt, userPrompt, getScreenAIOptions(), 2);
+    const parsed = await parseAIWithRetries(systemPrompt, userPrompt, withJobSelection(aiSelection, getScreenAIOptions), 2);
     const html = parsed.html || "";
     const css = parsed.css || "";
     const js = parsed.js || "";
@@ -1033,7 +1037,8 @@ export const runUpdateJob = async (jobId) => {
         updateBrief,
         originalBrief,
         domain,
-        theme
+        theme,
+        job.aiSelection
       );
 
       screenChunks.push(result);

@@ -6,6 +6,7 @@ import PageHeader from "../components/PageHeader";
 import Badge from "../components/Badge";
 import EmptyState from "../components/EmptyState";
 import ConfirmButton from "../components/ConfirmButton";
+import LlmAssignPicker from "../components/LlmAssignPicker";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -33,6 +34,19 @@ const UsersIcon = () => (
   </svg>
 );
 
+const llmSummary = (userLlms = [], roleLlms = []) => {
+  if (userLlms.length > 0) return `${userLlms.length} custom`;
+  if (roleLlms.length > 0) return `${roleLlms.length} from role`;
+  return "All models";
+};
+
+const filterCatalogForRole = (catalog = [], role) => {
+  const roleLlms = role?.allowedLlms || [];
+  if (roleLlms.length === 0) return catalog;
+  const allowed = new Set(roleLlms);
+  return catalog.filter((model) => allowed.has(model.id));
+};
+
 const Avatar = ({ first, last }) => {
   const initials = `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase() || "U";
   return (
@@ -57,6 +71,8 @@ const Users = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [roleId, setRoleId] = useState("");
+  const [allowedLlms, setAllowedLlms] = useState([]);
+  const [llmCatalog, setLlmCatalog] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -66,12 +82,14 @@ const Users = () => {
 
   const fetchData = async () => {
     try {
-      const [usersRes, rolesRes] = await Promise.all([
+      const [usersRes, rolesRes, catalogRes] = await Promise.all([
         axios.get("/users"),
         axios.get("/roles"),
+        axios.get("/users/llm-catalog"),
       ]);
       setUsers(usersRes.data);
       setRoles(rolesRes.data);
+      setLlmCatalog(catalogRes.data?.models || []);
       if (!roleId && rolesRes.data.length > 0) setRoleId(rolesRes.data[0]._id);
     } catch (err) {
       showToast(err.response?.data?.error || "Failed to load users", "error");
@@ -86,7 +104,19 @@ const Users = () => {
     setLastName("");
     setEmail("");
     setPassword("");
+    setAllowedLlms([]);
     if (roles.length > 0) setRoleId(roles[0]._id);
+  };
+
+  const selectedRole = roles.find((r) => r._id === roleId);
+  const roleScopedCatalog = filterCatalogForRole(llmCatalog, selectedRole);
+
+  const handleRoleChange = (nextRoleId) => {
+    setRoleId(nextRoleId);
+    const nextRole = roles.find((r) => r._id === nextRoleId);
+    const scoped = filterCatalogForRole(llmCatalog, nextRole);
+    const scopedIds = new Set(scoped.map((m) => m.id));
+    setAllowedLlms((prev) => prev.filter((id) => scopedIds.has(id)));
   };
 
   const handleEdit = (u) => {
@@ -96,6 +126,7 @@ const Users = () => {
     setEmail(u.email);
     setPassword("");
     setRoleId(u.role?._id || u.role || "");
+    setAllowedLlms(u.allowedLlms || []);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -105,7 +136,7 @@ const Users = () => {
 
     setSaving(true);
     try {
-      const payload = { firstName, lastName, email, roleId };
+      const payload = { firstName, lastName, email, roleId, allowedLlms };
       if (password) payload.password = password;
 
       if (editingId) {
@@ -149,7 +180,7 @@ const Users = () => {
     <div className="ba-page" style={{ maxWidth: 960, margin: "0 auto" }}>
       <PageHeader
         title="User Management"
-        subtitle="Create users and assign roles with defined permissions"
+        subtitle="Create users, assign roles, and optionally restrict AI models per user"
       />
 
       {(canCreate || (canUpdate && editingId)) && (
@@ -181,9 +212,26 @@ const Users = () => {
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>Role *</label>
-              <select style={{ ...inputStyle, cursor: "pointer" }} value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+              <select
+                style={{ ...inputStyle, cursor: "pointer" }}
+                value={roleId}
+                onChange={(e) => handleRoleChange(e.target.value)}
+              >
                 {roles.map((r) => <option key={r._id} value={r._id}>{r.name}</option>)}
               </select>
+            </div>
+            <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+              <LlmAssignPicker
+                models={roleScopedCatalog}
+                selectedIds={allowedLlms}
+                onChange={setAllowedLlms}
+                emptyLabel="Inherit models from the selected role"
+                hint={
+                  selectedRole?.allowedLlms?.length
+                    ? `Role "${selectedRole.name}" allows ${selectedRole.allowedLlms.length} model(s). Leave empty to grant all of them.`
+                    : "Selected role allows all configured models. Pick specific models here to restrict this user further."
+                }
+              />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -227,7 +275,7 @@ const Users = () => {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--bg-elevated)" }}>
-                {["User", "Email", "Role", "Status", ""].map((h) => (
+                {["User", "Email", "Role", "AI Models", "Status", ""].map((h) => (
                   <th key={h} style={{
                     padding: "10px 16px", textAlign: "left", fontSize: 11,
                     color: "var(--text-muted)", textTransform: "uppercase",
@@ -250,6 +298,9 @@ const Users = () => {
                   <td style={{ padding: "10px 16px", fontSize: 12, color: "var(--text-secondary)" }}>{u.email}</td>
                   <td style={{ padding: "10px 16px" }}>
                     {u.role?.name ? <Badge color={roleBadgeColor(u.role.name)}>{u.role.name}</Badge> : <span style={{ color: "var(--text-muted)" }}>—</span>}
+                  </td>
+                  <td style={{ padding: "10px 16px", fontSize: 12, color: "var(--text-secondary)" }}>
+                    {llmSummary(u.allowedLlms, u.role?.allowedLlms)}
                   </td>
                   <td style={{ padding: "10px 16px" }}>
                     <span

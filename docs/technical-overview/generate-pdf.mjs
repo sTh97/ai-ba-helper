@@ -6,7 +6,7 @@ import puppeteer from "puppeteer";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const HTML_PATH = join(__dirname, "index.html");
-const OUT_PATH = join(__dirname, "AI-BA-Helper-Technical-Overview.pdf");
+const OUT_PATH = join(__dirname, "Requify-Technical-Overview.pdf");
 
 // Resolve a usable Chrome binary. Prefer an explicit override, then whatever
 // Puppeteer would pick, then the newest browser already in the local cache
@@ -35,7 +35,7 @@ const resolveExecutablePath = () => {
 const footer = `
   <div style="width:100%;font-size:7px;color:#6b7689;padding:0 12mm;
               display:flex;justify-content:space-between;font-family:Segoe UI,Arial,sans-serif;">
-    <span>AI BA Helper — Technical Overview</span>
+    <span>Requify — Technical Overview</span>
     <span>Page <span class="pageNumber"></span> / <span class="totalPages"></span></span>
   </div>`;
 

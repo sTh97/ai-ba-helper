@@ -1,4 +1,5 @@
 import axios from "axios";
+import { LLM_STORAGE_KEY } from "../constants/llm";
 
 const axiosInstance = axios.create({
   baseURL: "http://localhost:5000/api",
@@ -9,6 +10,10 @@ axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  const aiSelection = localStorage.getItem(LLM_STORAGE_KEY);
+  if (aiSelection) {
+    config.headers["X-AI-Selection"] = aiSelection;
   }
   return config;
 });

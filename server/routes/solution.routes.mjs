@@ -8,16 +8,20 @@ import {
   saveSolution,
   updateSolution,
   deleteSolution,
+  exportSolution,
 } from "../controllers/solution.controller.mjs";
 import { authenticate, authorize } from "../middleware/auth.middleware.mjs";
+import { attachAISelection } from "../middleware/aiSelection.middleware.mjs";
 
 const router = express.Router();
 
 router.use(authenticate);
+router.use(attachAISelection);
 
 router.get("/project/:projectId/stories", authorize("solution", "read"), getProjectStoriesPreview);
 router.post("/prompt/refine", authorize("solution", "create"), refineSolutionPrompt);
 router.post("/generate", authorize("solution", "create"), generateSolutionArchitecture);
+router.post("/export", authorize("solution", "read"), exportSolution);
 router.get("/", authorize("solution", "read"), getAllSolutions);
 router.get("/:id", authorize("solution", "read"), getSolutionById);
 router.post("/", authorize("solution", "create"), saveSolution);

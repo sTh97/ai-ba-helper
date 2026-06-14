@@ -78,7 +78,7 @@ const Login = () => {
               </svg>
             </div>
             <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 17, color: "var(--text-primary)", letterSpacing: "-0.3px" }}>
-              BA Helper
+              Requify
             </span>
           </div>
 
@@ -122,7 +122,7 @@ const Login = () => {
                 </svg>
               </div>
               <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 17, color: "var(--text-primary)" }}>
-                BA Helper
+                Requify
               </span>
             </div>
           )}
