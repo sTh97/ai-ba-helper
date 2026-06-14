@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI BA Helper — Technical Overview</title>
+<style>
+  :root {
+    --ink: #1a2233;
+    --ink-soft: #44506a;
+    --muted: #6b7689;
+    --line: #e2e6ee;
+    --line-soft: #eef1f6;
+    --brand: #3a4fd6;
+    --brand-deep: #1f2a6e;
+    --accent: #0fb6a8;
+    --warn: #c2410c;
+    --bg-code: #f6f8fb;
+    --bg-soft: #f9fafc;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    font-size: 11.2px;
+    line-height: 1.6;
+    background: #fff;
+  }
+
+  .page {
+    padding: 0 6mm;
+  }
+
+  /* ---------- Cover ---------- */
+  .cover {
+    height: 250mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 14mm;
+    background: linear-gradient(150deg, #1f2a6e 0%, #3a4fd6 55%, #0fb6a8 130%);
+    color: #fff;
+    page-break-after: always;
+  }
+  .cover .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-size: 12px;
+    opacity: 0.85;
+    margin-bottom: 18px;
+  }
+  .cover h1 {
+    font-size: 46px;
+    line-height: 1.08;
+    margin: 0 0 16px;
+    font-weight: 700;
+  }
+  .cover .sub {
+    font-size: 16px;
+    max-width: 460px;
+    opacity: 0.92;
+    line-height: 1.5;
+  }
+  .cover .meta {
+    margin-top: 48px;
+    font-size: 12px;
+    opacity: 0.85;
+    border-top: 1px solid rgba(255,255,255,0.25);
+    padding-top: 16px;
+    max-width: 460px;
+  }
+  .cover .meta div { margin-bottom: 4px; }
+  .cover .pillrow { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .cover .pill {
+    border: 1px solid rgba(255,255,255,0.45);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 11px;
+  }
+
+  /* ---------- Typography ---------- */
+  h2 {
+    font-size: 22px;
+    color: var(--brand-deep);
+    margin: 0 0 6px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--brand);
+  }
+  h3 {
+    font-size: 15px;
+    color: var(--ink);
+    margin: 22px 0 6px;
+  }
+  h4 {
+    font-size: 12.5px;
+    color: var(--brand-deep);
+    margin: 16px 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  p { margin: 0 0 9px; }
+  ul, ol { margin: 0 0 10px; padding-left: 18px; }
+  li { margin-bottom: 4px; }
+  a { color: var(--brand); text-decoration: none; }
+  strong { color: var(--ink); }
+  code {
+    font-family: "Cascadia Code", "Consolas", monospace;
+    background: var(--bg-code);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.5px 4px;
+    font-size: 10px;
+    color: #b02a6b;
+  }
+
+  section.chapter {
+    page-break-before: always;
+    padding-top: 4mm;
+  }
+  section.chapter:first-of-type { page-break-before: avoid; }
+
+  .lead {
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: var(--bg-soft);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 16px;
+  }
+
+  /* ---------- TOC ---------- */
+  .toc { page-break-after: always; padding-top: 6mm; }
+  .toc h2 { border: none; }
+  .toc ol { list-style: none; padding: 0; counter-reset: toc; }
+  .toc li {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dotted var(--line);
+    padding: 6px 0;
+    font-size: 12px;
+  }
+  .toc li .t { color: var(--ink); font-weight: 600; }
+  .toc li .d { color: var(--muted); font-weight: 400; padding-left: 10px; }
+
+  /* ---------- Tables ---------- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 14px;
+    font-size: 10px;
+  }
+  th, td {
+    border: 1px solid var(--line);
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #eef1fb;
+    color: var(--brand-deep);
+    font-weight: 600;
+  }
+  tr:nth-child(even) td { background: var(--bg-soft); }
+  td code { font-size: 9.5px; }
+
+  /* ---------- Callouts ---------- */
+  .note, .warn, .tip {
+    border-radius: 6px;
+    padding: 9px 13px;
+    margin: 10px 0 14px;
+    font-size: 10.6px;
+    border: 1px solid;
+  }
+  .note { background: #eef3ff; border-color: #c6d4ff; }
+  .warn { background: #fff4ed; border-color: #ffd2b3; color: #7c2d12; }
+  .tip { background: #ecfbf7; border-color: #b9ece4; }
+  .note b, .warn b, .tip b { display: block; margin-bottom: 2px; }
+
+  /* ---------- Diagram ---------- */
+  .diagram {
+    margin: 12px 0 16px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg-soft);
+    text-align: center;
+    page-break-inside: avoid;
+  }
+  .diagram .cap {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 8px;
+    font-style: italic;
+  }
+  .mermaid { font-size: 12px; }
+
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 12px;
+    overflow: auto;
+    font-size: 9.6px;
+    line-height: 1.5;
+    font-family: "Cascadia Code", "Consolas", monospace;
+    color: #2a3142;
+    page-break-inside: avoid;
+  }
+  pre code { background: none; border: none; padding: 0; color: inherit; font-size: 9.6px; }
+
+  .tree {
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 9.6px;
+    line-height: 1.55;
+    background: var(--bg-code);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 14px;
+    white-space: pre;
+    color: #2a3142;
+  }
+  .tree .c { color: var(--muted); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 10px 12px;
+    background: #fff;
+  }
+  .card h4 { margin-top: 0; }
+  .kvs { font-size: 10px; }
+  .kvs b { color: var(--brand-deep); }
+
+  .badge {
+    display: inline-block;
+    font-size: 8.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #eef1fb;
+    color: var(--brand-deep);
+    border: 1px solid #c6d4ff;
+  }
+  .badge.get { background: #e7f7ee; color: #1c7a44; border-color: #b6e6c8; }
+  .badge.post { background: #eef3ff; color: #2a45c0; border-color: #c6d4ff; }
+  .badge.put { background: #fff5e6; color: #9a6300; border-color: #ffe0a3; }
+  .badge.del { background: #fdeaea; color: #b42323; border-color: #f5c2c2; }
+
+  .small { font-size: 9.5px; color: var(--muted); }
+  .footer-note {
+    margin-top: 18px;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+    font-size: 9px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== COVER ==================== -->
+<div class="cover">
+  <div class="eyebrow">Technical Overview</div>
+  <h1>AI&nbsp;BA&nbsp;Helper</h1>
+  <div class="sub">An AI-assisted Business Analyst platform that turns raw requirements into user stories, wireframes, clickable multi-screen prototypes, marketing collateral, and solution architecture.</div>
+  <div class="pillrow">
+    <span class="pill">React 19 + Vite</span>
+    <span class="pill">Express 5 (ESM)</span>
+    <span class="pill">MongoDB + Mongoose</span>
+    <span class="pill">JWT + RBAC</span>
+    <span class="pill">Ollama / Groq / OpenRouter</span>
+  </div>
+  <div class="meta">
+    <div><strong>Document:</strong> Codebase technical overview &amp; architecture reference</div>
+    <div><strong>Repository:</strong> ai-ba-helper</div>
+    <div><strong>Generated:</strong> <span id="gen-date"></span></div>
+    <div><strong>Audience:</strong> Engineers, architects, technical reviewers</div>
+  </div>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="page toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><span class="t">1 &nbsp; Executive Summary</span><span class="d">What the product does and who uses it</span></li>
+    <li><span class="t">2 &nbsp; Technology Stack &amp; Dependencies</span><span class="d">Client and server libraries</span></li>
+    <li><span class="t">3 &nbsp; Repository Structure</span><span class="d">Annotated directory layout</span></li>
+    <li><span class="t">4 &nbsp; Architecture Overview</span><span class="d">Runtime topology and layers</span></li>
+    <li><span class="t">5 &nbsp; Client Architecture</span><span class="d">Routing, RBAC, contexts, API layer</span></li>
+    <li><span class="t">6 &nbsp; Server Architecture</span><span class="d">Bootstrap, layering, API surface</span></li>
+    <li><span class="t">7 &nbsp; Authentication &amp; Authorization</span><span class="d">JWT, bcrypt, role-based permissions</span></li>
+    <li><span class="t">8 &nbsp; Data Model</span><span class="d">Collections, relationships, ERD</span></li>
+    <li><span class="t">9 &nbsp; AI Integration Layer</span><span class="d">Provider abstraction and resilience</span></li>
+    <li><span class="t">10 &nbsp; Prototype Generation Engine</span><span class="d">Background job pipeline</span></li>
+    <li><span class="t">11 &nbsp; Feature Module Walkthroughs</span><span class="d">End-to-end per feature</span></li>
+    <li><span class="t">12 &nbsp; End-to-End Data Flows</span><span class="d">Key sequences</span></li>
+    <li><span class="t">13 &nbsp; Configuration &amp; Operations</span><span class="d">Env vars, scripts, seeding</span></li>
+    <li><span class="t">14 &nbsp; Areas of Improvement</span><span class="d">Risks and a roadmap</span></li>
+  </ol>
+</div>
+
+<div class="page">
+
+<!-- ==================== 1. EXECUTIVE SUMMARY ==================== -->
+<section class="chapter" id="s1">
+  <h2>1 &nbsp; Executive Summary</h2>
+  <div class="lead">
+    AI BA Helper is a full-stack web application that compresses the early discovery work of a Business
+    Analyst. A user pastes or uploads raw requirements, and the system uses Large Language Models to produce
+    structured, review-ready artifacts: user stories with acceptance criteria and tests, UI wireframes,
+    interactive multi-screen HTML prototypes, marketing collateral, and solution-architecture documents.
+  </div>
+
+  <h3>1.1 &nbsp; Problem it solves</h3>
+  <p>
+    Translating stakeholder requirements into well-formed user stories, mockups, and supporting documents is
+    slow, repetitive, and inconsistent. AI BA Helper standardizes the output (a fixed story schema with
+    acceptance criteria, business rules, validations, fields, Definition of Ready / Done) and automates the
+    generation of visual artifacts directly from those stories.
+  </p>
+
+  <h3>1.2 &nbsp; Core capabilities</h3>
+  <table>
+    <thead><tr><th style="width:24%">Capability</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Requirement &rarr; Stories</strong></td><td>Raw text or large documents are chunked and enhanced by an LLM into a structured set of user stories (acceptance criteria, happy/negative tests, fields, business rules, validations, edge cases, DoR/DoD).</td></tr>
+      <tr><td><strong>Story &rarr; Wireframe</strong></td><td>Each story can be turned into a self-contained HTML/CSS/JS wireframe that implements its fields and validation rules.</td></tr>
+      <tr><td><strong>Stories &rarr; Prototype</strong></td><td>Multiple stories are assembled into a themed, multi-screen, clickable HTML application prototype via a background job pipeline.</td></tr>
+      <tr><td><strong>Prototype merge / update</strong></td><td>Existing prototypes can be merged into one unified app, or iteratively updated with a natural-language change request.</td></tr>
+      <tr><td><strong>Marketing collateral</strong></td><td>Generates structured marketing content (one-pagers) from stories and exports to PDF / DOCX / PPTX.</td></tr>
+      <tr><td><strong>Solution architecture</strong></td><td>Produces a solution-architecture document from the project's stories.</td></tr>
+      <tr><td><strong>Administration</strong></td><td>Projects, users, and roles with fine-grained module/action permissions and an analytics dashboard.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1.3 &nbsp; Shape of the system</h3>
+  <p>
+    The codebase is a two-package monorepo: a <code>client/</code> single-page React application and a
+    <code>server/</code> Express REST API backed by MongoDB. The server brokers all LLM calls through a
+    provider-agnostic AI layer that supports a local <strong>Ollama</strong> runtime, <strong>Groq</strong>,
+    and <strong>OpenRouter</strong>, with automatic model fallback and retry logic. The heaviest workload —
+    multi-screen prototype generation — runs asynchronously as a tracked, resumable-by-polling background job.
+  </p>
+</section>
+
+<!-- ==================== 2. TECH STACK ==================== -->
+<section class="chapter" id="s2">
+  <h2>2 &nbsp; Technology Stack &amp; Dependencies</h2>
+
+  <h3>2.1 &nbsp; Client (<code>client/package.json</code>)</h3>
+  <table>
+    <thead><tr><th style="width:26%">Package</th><th style="width:14%">Version</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>react</code> / <code>react-dom</code></td><td>^19.1.0</td><td>UI runtime.</td></tr>
+      <tr><td><code>react-router-dom</code></td><td>^7.6.3</td><td>Client-side routing and nested protected routes.</td></tr>
+      <tr><td><code>axios</code></td><td>^1.10.0</td><td>HTTP client with a shared instance + JWT interceptor.</td></tr>
+      <tr><td><code>lucide-react</code></td><td>^0.525.0</td><td>Icon set.</td></tr>
+      <tr><td><code>vite</code></td><td>^7.0.0</td><td>Dev server and build tooling.</td></tr>
+      <tr><td><code>tailwindcss</code> (+ <code>@tailwindcss/postcss</code>)</td><td>^4.1.11</td><td>Utility-first styling via PostCSS.</td></tr>
+      <tr><td><code>eslint</code> + plugins</td><td>^9.29.0</td><td>Linting (react-hooks, react-refresh).</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.2 &nbsp; Server (<code>server/package.json</code>)</h3>
+  <table>
+    <thead><tr><th style="width:26%">Package</th><th style="width:14%">Version</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>express</code></td><td>^5.1.0</td><td>HTTP framework (Express 5).</td></tr>
+      <tr><td><code>mongoose</code></td><td>^8.16.1</td><td>MongoDB ODM (schemas, models, indexes).</td></tr>
+      <tr><td><code>jsonwebtoken</code></td><td>^9.0.3</td><td>JWT signing/verification for auth.</td></tr>
+      <tr><td><code>bcryptjs</code></td><td>^3.0.3</td><td>Password hashing.</td></tr>
+      <tr><td><code>axios</code></td><td>^1.10.0</td><td>Outbound calls to AI providers.</td></tr>
+      <tr><td><code>openai</code></td><td>^5.8.2</td><td>OpenAI SDK (present; main path uses raw HTTP via axios).</td></tr>
+      <tr><td><code>cors</code></td><td>^2.8.5</td><td>Cross-origin access for the SPA.</td></tr>
+      <tr><td><code>dotenv</code></td><td>^17.0.1</td><td>Environment configuration.</td></tr>
+      <tr><td><code>docx</code></td><td>^9.7.1</td><td>DOCX export of marketing collateral.</td></tr>
+      <tr><td><code>pdfkit</code></td><td>^0.19.1</td><td>PDF export of marketing collateral.</td></tr>
+      <tr><td><code>pptxgenjs</code></td><td>^4.0.1</td><td>PPTX export of marketing collateral.</td></tr>
+      <tr><td><code>nodemon</code> (dev)</td><td>^3.1.14</td><td>Auto-restart in development.</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Module system</b> Both packages declare <code>"type": "module"</code>. The server uses explicit <code>.mjs</code> extensions throughout and native ES module imports.</div>
+</section>
+
+<!-- ==================== 3. REPO STRUCTURE ==================== -->
+<section class="chapter" id="s3">
+  <h2>3 &nbsp; Repository Structure</h2>
+  <p>The repository splits cleanly into <code>client/</code> and <code>server/</code>. Source files (excluding <code>node_modules/</code>) are laid out as follows.</p>
+
+  <div class="tree">ai-ba-helper/
+├─ client/                         <span class="c"># React 19 + Vite SPA</span>
+│  ├─ index.html                   <span class="c"># Vite entry HTML</span>
+│  ├─ vite.config.js  postcss.config.js  tailwind.config.js
+│  └─ src/
+│     ├─ main.jsx                  <span class="c"># App bootstrap (providers, router)</span>
+│     ├─ App.jsx                   <span class="c"># Route table + RBAC guards</span>
+│     ├─ api/axiosInstance.js      <span class="c"># Axios + JWT interceptor + poll helper</span>
+│     ├─ context/                  <span class="c"># AuthContext, ThemeContext</span>
+│     ├─ components/               <span class="c"># ProtectedRoute, Pagination, ChangePasswordModal</span>
+│     ├─ pages/                    <span class="c"># One file per screen (Dashboard, Login, ...)</span>
+│     │  ├─ components/            <span class="c"># TestCaseEditor, UIWireframeGenerator</span>
+│     │  └─ layout/MainLayout.jsx  <span class="c"># Shell: sidebar + outlet</span>
+│     └─ utils/pagination.js
+│
+└─ server/                         <span class="c"># Express 5 REST API (ESM)</span>
+   ├─ index.mjs                    <span class="c"># App bootstrap, route mounting, DB connect</span>
+   ├─ .env                         <span class="c"># Runtime config (committed — see §14)</span>
+   ├─ constants/modules.mjs        <span class="c"># RBAC modules + permission builders</span>
+   ├─ middleware/auth.middleware.mjs  <span class="c"># authenticate + authorize</span>
+   ├─ routes/*.routes.mjs          <span class="c"># 10 route groups</span>
+   ├─ controllers/*.controller.mjs <span class="c"># Request handlers + AI orchestration</span>
+   ├─ models/*.mjs                 <span class="c"># Mongoose schemas (8 collections)</span>
+   ├─ services/prototypeJobRunner.mjs <span class="c"># Async prototype pipeline</span>
+   ├─ seed/seed.mjs                <span class="c"># Super Admin role + admin user seeding</span>
+   └─ utils/                       <span class="c"># AI parsing, chunking, prototype builders, exports</span></div>
+
+  <h3>3.1 &nbsp; Naming conventions</h3>
+  <ul>
+    <li><strong>Routes</strong> are mounted under <code>/api/&lt;group&gt;</code> and named <code>&lt;group&gt;.routes.mjs</code>.</li>
+    <li><strong>Controllers</strong> mirror routes (<code>&lt;group&gt;.controller.mjs</code>) and hold both CRUD and AI-orchestration logic.</li>
+    <li><strong>Models</strong> are singular PascalCase Mongoose models in <code>&lt;name&gt;.model.mjs</code> (with the exception of <code>projects.mjs</code>).</li>
+    <li><strong>Utilities</strong> are grouped by concern (<code>aiParser</code>, <code>contentChunker</code>, <code>prototype*</code>, <code>marketingExport</code>, <code>openrouter</code>, <code>permissions</code>).</li>
+  </ul>
+  <div class="warn"><b>Observed inconsistencies</b> A few files indicate work-in-progress or duplication: <code>client/src/pages/UserStoryPage copy.jsx</code>, and the server's <code>ai.controller.openai.mjs</code> and <code>ai.controller.willbelater.mjs</code> are not wired into routes. These are flagged in §14.</div>
+</section>
+
+<!-- ==================== 4. ARCHITECTURE OVERVIEW ==================== -->
+<section class="chapter" id="s4">
+  <h2>4 &nbsp; Architecture Overview</h2>
+  <p>
+    AI BA Helper follows a classic decoupled SPA + REST API architecture, with a third dependency tier for AI
+    providers. The React client talks to the Express API exclusively over JSON; the API persists to MongoDB and
+    proxies all model calls to a configurable AI provider.
+  </p>
+
+  <div class="diagram">
+    <div class="mermaid">
+flowchart TB
+    subgraph browser [Browser]
+      SPA["React 19 SPA<br/>Vite build"]
+    end
+    subgraph api [Express 5 API server]
+      MW["Middleware<br/>authenticate + authorize"]
+      CTRL["Controllers"]
+      AIL["AI layer<br/>callAI()"]
+      JOB["Prototype Job Runner<br/>async pipeline"]
+    end
+    DB[("MongoDB<br/>Mongoose models")]
+    subgraph providers [AI Providers]
+      OLL["Ollama (local/cloud)"]
+      GRQ["Groq"]
+      ORT["OpenRouter"]
+    end
+
+    SPA -->|"REST /api/* + JWT"| MW
+    MW --> CTRL
+    CTRL --> DB
+    CTRL --> AIL
+    CTRL -->|"enqueue"| JOB
+    JOB --> DB
+    JOB --> AIL
+    AIL --> OLL
+    AIL --> GRQ
+    AIL --> ORT
+    SPA -.->|"poll job status"| MW
+    </div>
+    <div class="cap">Figure 4.1 — High-level runtime topology. The SPA polls the API for long-running prototype jobs.</div>
+  </div>
+
+  <h3>4.1 &nbsp; Layering</h3>
+  <table>
+    <thead><tr><th style="width:22%">Layer</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Presentation</strong></td><td>React pages + components; route-level RBAC; axios instance with token injection and 401 handling.</td></tr>
+      <tr><td><strong>Transport / Routing</strong></td><td>Express routers under <code>/api</code>; per-route <code>authenticate</code> then <code>authorize(module, action)</code>.</td></tr>
+      <tr><td><strong>Application / Controllers</strong></td><td>Validation of input, orchestration of AI calls, persistence, export generation.</td></tr>
+      <tr><td><strong>AI orchestration</strong></td><td>Provider selection, model fallback, prompt assembly, JSON parsing/repair, retries with backoff.</td></tr>
+      <tr><td><strong>Async processing</strong></td><td>Prototype generate/merge/update jobs executed off the request thread, progress persisted to Mongo.</td></tr>
+      <tr><td><strong>Persistence</strong></td><td>Mongoose models; ownership stamped via <code>createdBy</code>; TTL index expires jobs after 24h.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip"><b>Design intent</b> Controllers are deliberately "thick" — they combine HTTP handling, AI prompt construction, and persistence. The AI complexity is factored out into <code>controllers/ai.controller.mjs</code> and the <code>utils/prototype*</code> family so feature controllers can reuse <code>callAI()</code> and the builder helpers.</div>
+</section>
+
+<!-- ==================== 5. CLIENT ARCHITECTURE ==================== -->
+<section class="chapter" id="s5">
+  <h2>5 &nbsp; Client Architecture</h2>
+
+  <h3>5.1 &nbsp; Bootstrap &amp; providers</h3>
+  <p>
+    <code>main.jsx</code> mounts the app inside the router and the <code>AuthProvider</code> / <code>ThemeProvider</code>
+    contexts. <code>App.jsx</code> declares the entire route table and wraps protected areas in nested
+    <code>&lt;ProtectedRoute&gt;</code> elements.
+  </p>
+
+  <h3>5.2 &nbsp; Routing &amp; route-level RBAC</h3>
+  <p>
+    Every authenticated route is double-guarded: an outer <code>&lt;ProtectedRoute&gt;</code> ensures a session
+    exists, and an inner one checks a specific <code>module</code>/<code>action</code> permission. Unauthorized
+    users are redirected to their first permitted route.
+  </p>
+  <pre><code>&lt;Route element={&lt;ProtectedRoute module="stories" action="read" /&gt;}&gt;
+  &lt;Route path="/add-user-story" element={&lt;UserStoryPage /&gt;} /&gt;
+  &lt;Route path="/user-stories"   element={&lt;UserStories /&gt;} /&gt;
+&lt;/Route&gt;</code></pre>
+
+  <table>
+    <thead><tr><th>Route</th><th>Page</th><th>Required permission</th></tr></thead>
+    <tbody>
+      <tr><td><code>/login</code></td><td>Login</td><td>Public</td></tr>
+      <tr><td><code>/dashboard</code></td><td>Dashboard</td><td><code>dashboard:read</code></td></tr>
+      <tr><td><code>/add-project</code></td><td>AddProject</td><td><code>projects:read</code></td></tr>
+      <tr><td><code>/add-user-story</code>, <code>/user-stories</code></td><td>UserStoryPage, UserStories</td><td><code>stories:read</code></td></tr>
+      <tr><td><code>/create-application</code></td><td>CreateApplication</td><td><code>applications:read</code></td></tr>
+      <tr><td><code>/marketing-collateral</code></td><td>MarketingCollateral</td><td><code>marketing:read</code></td></tr>
+      <tr><td><code>/solution-architecture</code></td><td>SolutionArchitecture</td><td><code>solution:read</code></td></tr>
+      <tr><td><code>/roles</code></td><td>Roles</td><td><code>roles:read</code></td></tr>
+      <tr><td><code>/users</code></td><td>Users</td><td><code>users:read</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.3 &nbsp; Authentication context</h3>
+  <p>
+    <code>AuthContext</code> loads the current user from <code>GET /auth/me</code> on mount (using a token in
+    <code>localStorage</code>), and exposes <code>login</code>, <code>logout</code>, <code>hasPermission</code>,
+    and <code>getDataAccess</code>. Permission checks read the role's embedded <code>permissions</code> array, so
+    the UI hides/shows features in lockstep with the server's RBAC model.
+  </p>
+
+  <h3>5.4 &nbsp; API layer</h3>
+  <p>The shared <code>axiosInstance</code> centralizes cross-cutting HTTP behavior:</p>
+  <ul>
+    <li><strong>Base URL</strong> <code>http://localhost:5000/api</code> with a <strong>10-minute timeout</strong> — intentionally long because local Ollama + large-document processing can be slow.</li>
+    <li><strong>Request interceptor</strong> injects <code>Authorization: Bearer &lt;token&gt;</code> from <code>localStorage</code>.</li>
+    <li><strong>Response interceptor</strong> on a <code>401</code> clears the token and redirects to <code>/login</code> (except for the login call itself).</li>
+    <li><strong><code>pollWithTimeout</code></strong> helper issues short-timeout GETs, used to poll prototype-job progress.</li>
+  </ul>
+
+  <h3>5.5 &nbsp; Pages</h3>
+  <table>
+    <thead><tr><th style="width:24%">Page</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td>Login</td><td>Email/password sign-in; stores JWT.</td></tr>
+      <tr><td>Dashboard</td><td>Aggregate stats via <code>/dashboard/stats</code>.</td></tr>
+      <tr><td>AddProject</td><td>Create/select the project that scopes all artifacts.</td></tr>
+      <tr><td>UserStoryPage</td><td>Paste/upload requirements, run AI enhancement, edit the structured story (uses <code>TestCaseEditor</code>, <code>UIWireframeGenerator</code>).</td></tr>
+      <tr><td>UserStories</td><td>Browse, paginate, and manage saved stories.</td></tr>
+      <tr><td>CreateApplication</td><td>Select stories, write a brief, launch and watch a prototype job, preview/merge/update prototypes.</td></tr>
+      <tr><td>MarketingCollateral</td><td>Generate and export collateral (PDF/DOCX/PPTX).</td></tr>
+      <tr><td>SolutionArchitecture</td><td>Generate a solution-architecture document from stories.</td></tr>
+      <tr><td>Users / Roles</td><td>Admin CRUD for users and permission-bearing roles.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== 6. SERVER ARCHITECTURE ==================== -->
+<section class="chapter" id="s6">
+  <h2>6 &nbsp; Server Architecture</h2>
+
+  <h3>6.1 &nbsp; Bootstrap (<code>server/index.mjs</code>)</h3>
+  <p>The entry point configures Express, mounts the ten route groups, connects to MongoDB, and — only after a successful connection — recovers stale jobs, seeds the database, and starts listening.</p>
+  <pre><code>app.use(express.json({ limit: "15mb" }));   // large requirement payloads
+app.use(cors());                             // open CORS
+
+app.use("/api/auth", authRoutes);
+app.use("/api/roles", roleRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/stories", storyRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/applications", prototypeRoutes);
+app.use("/api/marketing", marketingRoutes);
+app.use("/api/solutions", solutionRoutes);
+
+mongoose.connect(process.env.MONGO_URI).then(async () =&gt; {
+  await markStaleJobsFailed();   // recover interrupted jobs
+  await seedDatabase();          // ensure Super Admin + admin user
+  app.listen(process.env.PORT || 5000);
+});</code></pre>
+
+  <div class="note"><b>Request size</b> The JSON body limit is raised to <code>15mb</code> to accommodate pasted documents and prototype HTML payloads.</div>
+
+  <h3>6.2 &nbsp; Request lifecycle</h3>
+  <div class="diagram">
+    <div class="mermaid">
+sequenceDiagram
+    participant C as Client (axios)
+    participant R as Router
+    participant A as authenticate
+    participant Z as authorize(module, action)
+    participant H as Controller
+    participant M as Mongoose / Model
+    C->>R: HTTP request + Bearer token
+    R->>A: route-level middleware
+    A->>M: verify JWT, load User + role
+    A-->>C: 401 if missing/invalid/inactive
+    A->>Z: req.user attached
+    Z-->>C: 403 if permission missing
+    Z->>H: authorized
+    H->>M: query / mutate (owner-scoped)
+    M-->>H: documents
+    H-->>C: JSON response
+    </div>
+    <div class="cap">Figure 6.1 — Standard authenticated request path. Most routers call <code>router.use(authenticate)</code> once, then apply <code>authorize()</code> per endpoint.</div>
+  </div>
+
+  <h3>6.3 &nbsp; API surface</h3>
+  <p>All endpoints below require a valid JWT; the listed module/action is enforced by <code>authorize()</code>.</p>
+
+  <h4>Auth — <code>/api/auth</code></h4>
+  <table><tbody>
+    <tr><td><span class="badge post">POST</span> <code>/login</code></td><td>Public. Returns JWT + user.</td></tr>
+    <tr><td><span class="badge get">GET</span> <code>/me</code></td><td>Current user (auth only).</td></tr>
+    <tr><td><span class="badge post">POST</span> <code>/change-password</code></td><td>Change own password (auth only).</td></tr>
+  </tbody></table>
+
+  <h4>Stories — <code>/api/stories</code> &amp; AI — <code>/api/ai</code></h4>
+  <table><tbody>
+    <tr><td><span class="badge post">POST</span> <code>/stories</code></td><td><code>stories:create</code></td></tr>
+    <tr><td><span class="badge get">GET</span> <code>/stories</code>, <code>/stories/:id</code>, <code>/stories/search/by-project</code></td><td><code>stories:read</code></td></tr>
+    <tr><td><span class="badge put">PUT</span> <code>/stories/:id</code></td><td><code>stories:update</code></td></tr>
+    <tr><td><span class="badge del">DELETE</span> <code>/stories/:id</code></td><td><code>stories:delete</code></td></tr>
+    <tr><td><span class="badge post">POST</span> <code>/stories/enhance</code></td><td><code>stories:update</code></td></tr>
+    <tr><td><span class="badge post">POST</span> <code>/ai/enhance</code></td><td><code>ai:create</code> — requirements &rarr; stories.</td></tr>
+    <tr><td><span class="badge post">POST</span> <code>/ai/generate-ui</code></td><td><code>ai:create</code> — story &rarr; wireframe.</td></tr>
+  </tbody></table>
+
+  <h4>Applications / Prototypes — <code>/api/applications</code></h4>
+  <table><tbody>
+    <tr><td><span class="badge get">GET</span> <code>/project/:projectId/stories</code></td><td>Preview stories for selection (<code>applications:read</code>).</td></tr>
+    <tr><td><span class="badge post">POST</span> <code>/refine-prompt</code>, <code>/prompt/refine</code></td><td>AI-refine the prototype brief (<code>applications:create</code>).</td></tr>
+    <tr><td><span class="badge post">POST</span> <code>/generate</code>, <code>/merge</code>, <code>/update</code></td><td>Enqueue generate / merge / update jobs.</td></tr>
+    <tr><td><span class="badge get">GET</span> <code>/jobs/:jobId</code></td><td>Poll job progress.</td></tr>
+    <tr><td><span class="badge del">DELETE</span> <code>/jobs/:jobId</code></td><td>Cancel a running job.</td></tr>
+    <tr><td><span class="badge get">GET</span> <code>/</code>, <code>/:id</code> &nbsp; <span class="badge post">POST</span> <code>/</code> &nbsp; <span class="badge put">PUT</span> <code>/:id</code> &nbsp; <span class="badge del">DELETE</span> <code>/:id</code></td><td>CRUD on saved prototypes.</td></tr>
+  </tbody></table>
+
+  <h4>Marketing — <code>/api/marketing</code> &amp; Solutions — <code>/api/solutions</code></h4>
+  <table><tbody>
+    <tr><td><span class="badge post">POST</span> <code>/marketing/generate</code>, <code>/solutions/generate</code></td><td>Generate content from stories.</td></tr>
+    <tr><td><span class="badge post">POST</span> <code>/marketing/export</code></td><td>Export collateral to PDF/DOCX/PPTX.</td></tr>
+    <tr><td><span class="badge post">POST</span> <code>/{marketing,solutions}/prompt/refine</code></td><td>Refine the generation brief.</td></tr>
+    <tr><td>CRUD <code>/</code>, <code>/:id</code></td><td>Standard create/read/update/delete.</td></tr>
+  </tbody></table>
+
+  <h4>Admin — <code>/api/projects</code>, <code>/api/users</code>, <code>/api/roles</code>, <code>/api/dashboard</code></h4>
+  <table><tbody>
+    <tr><td>Projects</td><td>CRUD + <code>GET /search</code>.</td></tr>
+    <tr><td>Users</td><td>CRUD (<code>users:*</code>).</td></tr>
+    <tr><td>Roles</td><td>CRUD + <code>GET /modules</code> (catalog of permissionable modules).</td></tr>
+    <tr><td>Dashboard</td><td><code>GET /stats</code> (<code>dashboard:read</code>).</td></tr>
+  </tbody></table>
+</section>
+
+<!-- ==================== 7. AUTH ==================== -->
+<section class="chapter" id="s7">
+  <h2>7 &nbsp; Authentication &amp; Authorization</h2>
+
+  <h3>7.1 &nbsp; Authentication</h3>
+  <p>
+    Login compares a bcrypt-hashed password and issues a JWT signed with <code>JWT_SECRET</code> that expires in
+    <strong>7 days</strong>. The <code>authenticate</code> middleware extracts the <code>Bearer</code> token,
+    verifies it, loads the user with its <code>role</code> populated, and rejects missing/invalid tokens or
+    inactive users.
+  </p>
+  <pre><code>export const signToken = (userId) =&gt;
+  jwt.sign({ userId }, JWT_SECRET, { expiresIn: "7d" });
+
+export const authenticate = async (req, res, next) =&gt; {
+  const header = req.headers.authorization;          // "Bearer &lt;token&gt;"
+  const decoded = jwt.verify(token, JWT_SECRET);
+  const user = await User.findById(decoded.userId).populate("role");
+  if (!user || !user.isActive) return res.status(401)...;
+  req.user = user; next();
+};</code></pre>
+
+  <p>Passwords are hashed in a Mongoose <code>pre("save")</code> hook and never selected by default (<code>select: false</code>):</p>
+  <pre><code>userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+});</code></pre>
+
+  <h3>7.2 &nbsp; Authorization model (RBAC)</h3>
+  <p>
+    Authorization is module + action based. The catalog of modules lives in <code>constants/modules.mjs</code>;
+    each <strong>Role</strong> embeds a <code>permissions</code> array with <code>create/read/update/delete</code>
+    booleans and a <code>dataAccess</code> scope (<code>own</code> vs <code>all</code>) per module.
+  </p>
+  <table>
+    <thead><tr><th>Modules</th><th>Actions</th><th>Data access</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>dashboard, projects, stories, applications, marketing, solution, ai, users, roles</td>
+        <td>create, read, update, delete</td>
+        <td><code>own</code> (only <code>createdBy</code> = self) or <code>all</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <pre><code>// authorize() gate, applied per route
+export const authorize = (module, action) =&gt; (req, res, next) =&gt; {
+  if (!hasPermission(req.user, module, action))
+    return res.status(403).json({ error: "..." });
+  next();
+};
+
+// data scoping inside controllers
+export const buildOwnerFilter = (user, module) =&gt;
+  hasDataAccessAll(user, module) ? {} : { createdBy: user._id };</code></pre>
+
+  <div class="tip"><b>Defense in depth</b> The same permission shape is enforced twice: client-side (<code>AuthContext.hasPermission</code> hides UI) and server-side (<code>authorize</code> blocks the request). Record-level access additionally narrows queries via <code>buildOwnerFilter</code> / <code>canAccessResource</code>.</div>
+
+  <h3>7.3 &nbsp; Seeding</h3>
+  <p>
+    On every boot, <code>seedDatabase()</code> ensures a <strong>Super Admin</strong> role exists with full
+    permissions and an admin user (<code>SEED_ADMIN_EMAIL</code> / <code>SEED_ADMIN_PASSWORD</code>, defaulting to
+    <code>admin@bahelper.com</code>). Existing Super Admin permissions are re-synced to the full set on each start.
+  </p>
+</section>
+
+<!-- ==================== 8. DATA MODEL ==================== -->
+<section class="chapter" id="s8">
+  <h2>8 &nbsp; Data Model</h2>
+  <p>Eight Mongoose collections. Almost every domain document is scoped to a <code>Project</code> and stamped with <code>createdBy</code> for ownership-based access control.</p>
+
+  <div class="diagram">
+    <div class="mermaid">
+erDiagram
+    ROLE ||--o{ USER : "assigned to"
+    USER ||--o{ PROJECT : "creates"
+    USER ||--o{ STORY : "creates"
+    PROJECT ||--o{ STORY : "contains"
+    PROJECT ||--o{ APPLICATIONPROTOTYPE : "contains"
+    PROJECT ||--o{ PROTOTYPEJOB : "contains"
+    PROJECT ||--o{ MARKETINGCOLLATERAL : "contains"
+    PROJECT ||--o{ SOLUTIONARCHITECTURE : "contains"
+    STORY }o--o{ APPLICATIONPROTOTYPE : "mapped via storyIds"
+    PROTOTYPEJOB ||--|| APPLICATIONPROTOTYPE : "produces result"
+    APPLICATIONPROTOTYPE }o--o{ APPLICATIONPROTOTYPE : "mergedFromIds"
+
+    ROLE {
+      string name
+      array permissions
+      bool isSystem
+    }
+    USER {
+      string email
+      string password
+      ObjectId role
+      bool isActive
+    }
+    STORY {
+      string originalText
+      string correctedText
+      array acceptanceCriteria
+      array fields
+      object wireframe
+    }
+    APPLICATIONPROTOTYPE {
+      string name
+      object structure
+      object prototype
+      bool isMerged
+    }
+    PROTOTYPEJOB {
+      string type
+      string status
+      object progress
+      array chunks
+    }
+    </div>
+    <div class="cap">Figure 8.1 — Entity relationships. Story-to-prototype mapping is a soft reference via <code>storyIds</code> / <code>mappedStoryIds</code>.</div>
+  </div>
+
+  <h3>8.1 &nbsp; Collection reference</h3>
+  <table>
+    <thead><tr><th style="width:20%">Collection</th><th>Key fields</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>User</strong></td><td><code>firstName, lastName, email (unique), password (select:false), role &rarr; Role, isActive, createdBy</code></td><td>bcrypt hash on save; <code>comparePassword</code> method.</td></tr>
+      <tr><td><strong>Role</strong></td><td><code>name (unique), description, permissions[], isSystem</code></td><td>Permission sub-schema: module enum + CRUD booleans + <code>dataAccess</code>.</td></tr>
+      <tr><td><strong>Project</strong></td><td><code>name, description, createdBy</code></td><td>Top-level scope for all artifacts.</td></tr>
+      <tr><td><strong>Story</strong></td><td><code>projectId, originalText, correctedText, feature, acceptanceCriteria[], happyTests[], negativeTests[], fields[], businessRules[], validations[], edgeCases[], constraints[], dependencies[], businessImpact, definitionOfReady[], definitionOfDone[], status, wireframe{}</code></td><td>Rich BA schema; <code>status</code> = draft / reviewed / final; embedded wireframe HTML/CSS/JS.</td></tr>
+      <tr><td><strong>ApplicationPrototype</strong></td><td><code>projectId, name, storyIds[], structure{appName, summary, navigation[], screens[], theme}, prototype{html, css, js, fullDocument}, usedScaffold, isMerged, mergedFromIds[]</code></td><td>Final saved multi-screen app + its structure/theme.</td></tr>
+      <tr><td><strong>PrototypeJob</strong></td><td><code>type, status, projectId, storyIds[]/prototypeIds[]/sourcePrototypeId, prompts, progress{phase, percent, message}, chunks[], screenChunks[], partialPrototype{}, result, cancelled</code></td><td>Tracks generate/merge/update. <strong>TTL index expires after 86,400s (24h)</strong>; indexed on <code>(projectId, createdBy, status)</code>.</td></tr>
+      <tr><td><strong>MarketingCollateral</strong></td><td><code>projectId, name, collateralType, format(pdf/docx/pptx), storyIds[], content{title, sections[], callToAction, theme}, hasContent</code></td><td>Structured content suitable for export.</td></tr>
+      <tr><td><strong>SolutionArchitecture</strong></td><td><code>projectId, name, storyIds[], prompt, content (Mixed), hasContent</code></td><td>Flexible content blob from AI.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== 9. AI LAYER ==================== -->
+<section class="chapter" id="s9">
+  <h2>9 &nbsp; AI Integration Layer</h2>
+  <div class="lead">
+    <code>controllers/ai.controller.mjs</code> is the heart of the system: a single resilient
+    <code>callAI(systemPrompt, userPrompt, useJsonMode, options)</code> function abstracts three providers,
+    multiple models, JSON-mode quirks, reasoning toggles, retries, and backoff behind one interface.
+  </div>
+
+  <h3>9.1 &nbsp; Provider abstraction</h3>
+  <p>The active provider is chosen from env (<code>AI_PROVIDER</code>, default <code>ollama</code>); the prototype pipeline can use a separate provider (<code>PROTOTYPE_AI_PROVIDER</code>). Each provider has its own endpoint, headers, and model defaults.</p>
+  <table>
+    <thead><tr><th>Provider</th><th>Endpoint</th><th>Auth / notes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Ollama</strong></td><td><code>OLLAMA_BASE_URL</code> (default <code>localhost:11434/v1</code>)</td><td>No key; supports local and <code>:cloud</code> models; long timeouts.</td></tr>
+      <tr><td><strong>Groq</strong></td><td><code>api.groq.com/openai/v1</code></td><td><code>GROQ_API_KEY</code>; low concurrency to respect free-tier rate limits.</td></tr>
+      <tr><td><strong>OpenRouter</strong></td><td><code>openrouter.ai/api/v1</code></td><td><code>OPENROUTER_API_KEY</code>; rotates through a list of free models.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.2 &nbsp; Resilience strategy</h3>
+  <p>A single call can traverse multiple models and multiple per-model attempts:</p>
+  <ul>
+    <li><strong>Model fallback</strong> — ordered lists (e.g. configured model &rarr; <code>FREE_MODELS</code> / <code>UI_MODELS</code>); rate-limited models are skipped to the next.</li>
+    <li><strong>Attempt matrix</strong> — <code>buildAttempts()</code> tries combinations of JSON mode on/off and reasoning-exclude on/off, tailored per model family (Nemotron/Gemma/cloud vs Hermes/free).</li>
+    <li><strong>Transparent retry</strong> — <code>postWithRetry()</code> retries <code>429/500/502/503</code> with exponential backoff, honoring the provider's <code>Retry-After</code> header.</li>
+    <li><strong>Content extraction</strong> — <code>extractMessageContent()</code> picks the first non-empty of <code>message.content</code>, <code>reasoning</code>, or <code>output_text</code>.</li>
+    <li><strong>Actionable errors</strong> — exhausted/unreachable providers yield human-readable guidance (e.g. "Ollama is not reachable", "OpenRouter free daily quota is exhausted").</li>
+  </ul>
+
+  <div class="diagram">
+    <div class="mermaid">
+flowchart TD
+    START["callAI()"] --> M{"next model?"}
+    M -->|"yes"| ATT{"next attempt<br/>json / reasoning combo"}
+    M -->|"no models left"| FAIL["throw aggregated error"]
+    ATT -->|"none left"| M
+    ATT --> POST["postWithRetry()<br/>backoff on 429/5xx"]
+    POST -->|"content"| OK["return content"]
+    POST -->|"rate limited"| M
+    POST -->|"retryable"| ATT
+    POST -->|"fatal 401/403"| FAIL
+    </div>
+    <div class="cap">Figure 9.1 — <code>callAI</code> control flow across models and attempts.</div>
+  </div>
+
+  <h3>9.3 &nbsp; Story enhancement</h3>
+  <p>
+    <code>enhanceStory()</code> chunks large input (<code>contentChunker</code>), and for each chunk asks the model
+    for strictly-typed JSON user stories with a fixed schema (acceptance criteria, happy/negative tests, fields,
+    business rules, validations, edge cases, DoR/DoD). Results are parsed with repair logic
+    (<code>parseAIJson</code>), validated (<code>validateStories</code>), de-duplicated, and merged. Invalid JSON
+    triggers a corrective re-prompt.
+  </p>
+
+  <h3>9.4 &nbsp; Wireframe generation</h3>
+  <p>
+    <code>generateUI()</code> turns a single story into a self-contained HTML/CSS/JS wireframe that renders a real
+    input for every declared field, wires the validation rules, and respects business rules/constraints — or
+    returns <code>{ applicable: false }</code> for backend-only stories. Output is sanitized
+    (<code>sanitizePrototypeCode</code>) and wrapped into a full HTML document.
+  </p>
+  <div class="note"><b>Option presets</b> Tuned option builders — <code>getUIAIOptions</code>, <code>getEnhanceAIOptions</code>, <code>getStructureAIOptions</code>, <code>getScreenAIOptions</code> — set per-task model lists, token budgets, and timeouts so each step uses an appropriate model and limit.</div>
+</section>
+
+<!-- ==================== 10. PROTOTYPE ENGINE ==================== -->
+<section class="chapter" id="s10">
+  <h2>10 &nbsp; Prototype Generation Engine</h2>
+  <div class="lead">
+    <code>services/prototypeJobRunner.mjs</code> is the most sophisticated subsystem. Because a multi-screen
+    prototype can take minutes, generation runs as an asynchronous, persisted, cancellable job built from
+    discrete <em>chunks</em>; the client polls <code>GET /applications/jobs/:jobId</code> for progress and a live
+    partial preview.
+  </div>
+
+  <h3>10.1 &nbsp; Job types</h3>
+  <table>
+    <thead><tr><th>Type</th><th>Input</th><th>Output</th></tr></thead>
+    <tbody>
+      <tr><td><strong>generate</strong></td><td>Selected stories + optional brief</td><td>A new themed multi-screen prototype.</td></tr>
+      <tr><td><strong>merge</strong></td><td>2+ existing prototypes</td><td>One unified app reusing source UI.</td></tr>
+      <tr><td><strong>update</strong></td><td>A saved prototype + change request</td><td>Edited prototype, screen by screen.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.2 &nbsp; Generate pipeline</h3>
+  <ol>
+    <li><strong>Scaffold</strong> — infer the application domain and an AI-designed <code>theme</code> (colors/fonts), then deterministically plan screens and chunks from the stories (<code>planPrototypeChunks</code>) and build a preview scaffold.</li>
+    <li><strong>Structure refine</strong> — for larger/brief-driven jobs, an LLM refines the screen map (grouping stories into 3–12 coherent screens). Small story sets skip this step (<code>STRUCTURE_SKIP_THRESHOLD</code>).</li>
+    <li><strong>Per-screen enrichment</strong> — each screen is generated concurrently (a bounded <code>runPool</code>, default concurrency 3) into scoped HTML/CSS/JS; weak/empty output triggers a regenerate, then a scaffold fallback.</li>
+    <li><strong>Assemble</strong> — screens are injected into the shell, CSS merged, and a final <code>fullDocument</code> is composed and stored on the job's <code>result</code>.</li>
+  </ol>
+
+  <div class="diagram">
+    <div class="mermaid">
+stateDiagram-v2
+    [*] --> queued
+    queued --> running
+    state running {
+      [*] --> scaffold
+      scaffold --> structure
+      structure --> screen
+      screen --> screen : "per screen (pooled)"
+      screen --> assemble
+      assemble --> [*]
+    }
+    running --> completed
+    running --> failed
+    running --> cancelled
+    completed --> [*]
+    failed --> [*]
+    cancelled --> [*]
+    </div>
+    <div class="cap">Figure 10.1 — Prototype job state machine. Phases map to chunks persisted on the job document.</div>
+  </div>
+
+  <h3>10.3 &nbsp; Progress, cancellation &amp; recovery</h3>
+  <ul>
+    <li><strong>Progress</strong> — each chunk transition updates <code>progress.percent</code>/<code>message</code> and a <code>partialPrototype</code> the UI can render live.</li>
+    <li><strong>Cancellation</strong> — <code>isJobCancelled()</code> is checked between phases/chunks; <code>DELETE /jobs/:jobId</code> sets the flag.</li>
+    <li><strong>Concurrency guard</strong> — an in-memory <code>activeJobs</code> Set prevents a job from running twice in one process.</li>
+    <li><strong>Stale recovery</strong> — on boot, <code>markStaleJobsFailed()</code> fails any <code>queued/running</code> job older than one hour (e.g. after a server restart).</li>
+    <li><strong>TTL</strong> — job documents auto-expire after 24 hours via a Mongo TTL index.</li>
+  </ul>
+  <div class="warn"><b>Single-process assumption</b> Both the <code>activeJobs</code> guard and the <code>setImmediate</code>-based execution assume one server instance. Horizontal scaling would require an external queue — see §14.</div>
+</section>
+
+<!-- ==================== 11. FEATURE WALKTHROUGHS ==================== -->
+<section class="chapter" id="s11">
+  <h2>11 &nbsp; Feature Module Walkthroughs</h2>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>User Stories</h4>
+      <p class="kvs"><b>UI:</b> UserStoryPage / UserStories<br/><b>API:</b> <code>/ai/enhance</code>, <code>/stories</code> CRUD, <code>/ai/generate-ui</code><br/><b>Model:</b> Story</p>
+      <p>Paste requirements &rarr; AI produces structured stories &rarr; edit &amp; save &rarr; optionally generate a per-story wireframe stored on <code>story.wireframe</code>.</p>
+    </div>
+    <div class="card">
+      <h4>Applications / Prototypes</h4>
+      <p class="kvs"><b>UI:</b> CreateApplication<br/><b>API:</b> <code>/applications/generate|merge|update</code>, <code>/jobs/:id</code><br/><b>Model:</b> PrototypeJob, ApplicationPrototype</p>
+      <p>Select stories &rarr; enqueue job &rarr; poll progress + live preview &rarr; save, merge, or iterate.</p>
+    </div>
+    <div class="card">
+      <h4>Marketing Collateral</h4>
+      <p class="kvs"><b>UI:</b> MarketingCollateral<br/><b>API:</b> <code>/marketing/generate</code>, <code>/marketing/export</code><br/><b>Model:</b> MarketingCollateral<br/><b>Util:</b> marketingExport (docx/pdfkit/pptxgenjs)</p>
+      <p>Generate structured collateral from stories &rarr; persist &rarr; export to PDF / DOCX / PPTX.</p>
+    </div>
+    <div class="card">
+      <h4>Solution Architecture</h4>
+      <p class="kvs"><b>UI:</b> SolutionArchitecture<br/><b>API:</b> <code>/solutions/generate</code> + CRUD<br/><b>Model:</b> SolutionArchitecture</p>
+      <p>Produce a solution-architecture document from a project's stories; store flexible content.</p>
+    </div>
+    <div class="card">
+      <h4>Projects</h4>
+      <p class="kvs"><b>UI:</b> AddProject<br/><b>API:</b> <code>/projects</code> CRUD + <code>/search</code><br/><b>Model:</b> Project</p>
+      <p>Projects are the scoping unit; every story, prototype, and document references a <code>projectId</code>.</p>
+    </div>
+    <div class="card">
+      <h4>Users &amp; Roles</h4>
+      <p class="kvs"><b>UI:</b> Users, Roles<br/><b>API:</b> <code>/users</code>, <code>/roles</code> (+ <code>/roles/modules</code>)<br/><b>Model:</b> User, Role</p>
+      <p>Admins define roles with per-module CRUD + data-access scope, then assign them to users.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:10px">
+    <h4>Dashboard</h4>
+    <p class="kvs"><b>UI:</b> Dashboard &nbsp; <b>API:</b> <code>GET /dashboard/stats</code> &nbsp; <b>Permission:</b> <code>dashboard:read</code></p>
+    <p>Aggregates counts across projects, stories, prototypes, and other artifacts for an at-a-glance overview.</p>
+  </div>
+</section>
+
+<!-- ==================== 12. DATA FLOWS ==================== -->
+<section class="chapter" id="s12">
+  <h2>12 &nbsp; End-to-End Data Flows</h2>
+
+  <h3>12.1 &nbsp; Requirements &rarr; User Stories</h3>
+  <div class="diagram">
+    <div class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant SPA as React SPA
+    participant API as /api/ai/enhance
+    participant AI as callAI()
+    participant P as Provider
+    U->>SPA: paste requirements
+    SPA->>API: POST content
+    API->>API: chunk large content
+    loop per chunk
+      API->>AI: enhance prompt (JSON)
+      AI->>P: model call (+fallback/retry)
+      P-->>AI: JSON stories
+      AI-->>API: parsed + validated
+    end
+    API-->>SPA: deduped stories
+    SPA->>U: editable structured stories
+    </div>
+    <div class="cap">Figure 12.1 — Story generation. Stories are saved separately via <code>POST /stories</code> once reviewed.</div>
+  </div>
+
+  <h3>12.2 &nbsp; Stories &rarr; Multi-screen Prototype</h3>
+  <div class="diagram">
+    <div class="mermaid">
+sequenceDiagram
+    participant SPA as React SPA
+    participant API as /api/applications
+    participant JR as Job Runner
+    participant AI as callAI()
+    participant DB as MongoDB
+    SPA->>API: POST /generate (storyIds, brief)
+    API->>DB: create PrototypeJob (queued)
+    API-->>SPA: jobId
+    API->>JR: setImmediate(runGenerateJob)
+    JR->>AI: theme + structure
+    loop per screen (pooled)
+      JR->>AI: generate screen HTML/CSS
+      JR->>DB: update chunk + partialPrototype
+    end
+    JR->>DB: assemble + status=completed
+    loop until done
+      SPA->>API: GET /jobs/:id
+      API->>DB: read progress
+      API-->>SPA: percent + partial preview
+    end
+    </div>
+    <div class="cap">Figure 12.2 — Asynchronous prototype generation with client polling.</div>
+  </div>
+</section>
+
+<!-- ==================== 13. CONFIG & OPS ==================== -->
+<section class="chapter" id="s13">
+  <h2>13 &nbsp; Configuration &amp; Operations</h2>
+
+  <h3>13.1 &nbsp; Environment variables (<code>server/.env</code>)</h3>
+  <table>
+    <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>MONGO_URI</code></td><td>MongoDB connection string.</td></tr>
+      <tr><td><code>PORT</code></td><td>API port (default 5000).</td></tr>
+      <tr><td><code>JWT_SECRET</code></td><td>JWT signing key (falls back to a hardcoded dev value — see §14).</td></tr>
+      <tr><td><code>AI_PROVIDER</code> / <code>PROTOTYPE_AI_PROVIDER</code></td><td>Active provider(s): <code>ollama</code> | <code>groq</code> | <code>openrouter</code>.</td></tr>
+      <tr><td><code>OLLAMA_BASE_URL</code>, <code>OLLAMA_MODEL</code>, <code>OLLAMA_UI_MODEL</code>, <code>OLLAMA_STRUCTURE_MODEL</code>, <code>OLLAMA_PROTOTYPE_MODEL</code>, <code>OLLAMA_SCREEN_MODEL</code></td><td>Ollama endpoint + per-task model selection.</td></tr>
+      <tr><td><code>GROQ_API_KEY</code>, <code>GROQ_MODEL</code></td><td>Groq credentials/model.</td></tr>
+      <tr><td><code>OPENROUTER_API_KEY</code>, <code>OPENROUTER_MODEL</code>, <code>OPENROUTER_UI_MODEL</code></td><td>OpenRouter credentials/models.</td></tr>
+      <tr><td><code>*_TIMEOUT_MS</code>, <code>PROTOTYPE_SCREEN_CONCURRENCY</code>, <code>PROTOTYPE_SCREEN_MAX_TOKENS</code></td><td>Timeouts, screen concurrency, token budgets.</td></tr>
+      <tr><td><code>SEED_ADMIN_EMAIL</code>, <code>SEED_ADMIN_PASSWORD</code></td><td>Seed admin credentials.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.2 &nbsp; Running locally</h3>
+  <pre><code># Server
+cd server &amp;&amp; npm install &amp;&amp; npm run dev   # nodemon index.mjs (port 5000)
+
+# Client
+cd client &amp;&amp; npm install &amp;&amp; npm run dev   # vite dev server</code></pre>
+  <p>On first server start, MongoDB is connected, stale jobs are failed, the Super Admin role + admin user are seeded, and the API begins listening. The client expects the API at <code>http://localhost:5000/api</code>.</p>
+
+  <h3>13.3 &nbsp; Operational characteristics</h3>
+  <ul>
+    <li><strong>Long timeouts</strong> client (10 min) and server are tuned for slow local inference.</li>
+    <li><strong>Self-healing jobs</strong> stale jobs are recovered on boot; jobs TTL-expire after 24h.</li>
+    <li><strong>Graceful AI degradation</strong> model/provider failures fall back rather than hard-failing the request where possible.</li>
+  </ul>
+</section>
+
+<!-- ==================== 14. IMPROVEMENTS ==================== -->
+<section class="chapter" id="s14">
+  <h2>14 &nbsp; Areas of Improvement</h2>
+  <p>The following observations are drawn directly from the code. They are grouped by theme and ordered roughly by priority.</p>
+
+  <h3>14.1 &nbsp; Security &amp; secrets <span class="badge del">high</span></h3>
+  <ul>
+    <li><strong>Committed secrets</strong> — <code>server/.env</code> is tracked in git. Secrets (DB URI, API keys) should be removed from history, rotated, and ignored via <code>.gitignore</code>.</li>
+    <li><strong>Committed <code>node_modules/</code></strong> — the server's dependencies are checked in, bloating the repo and risking drift. Ignore them and rely on lockfiles.</li>
+    <li><strong>Hardcoded JWT fallback</strong> — <code>JWT_SECRET</code> defaults to <code>"ba-helper-dev-secret-change-in-production"</code>. The server should refuse to boot without an explicit secret in production.</li>
+    <li><strong>Open CORS</strong> — <code>cors()</code> allows any origin. Restrict to known front-end origins.</li>
+    <li><strong>No rate limiting / input validation</strong> — add per-route rate limiting and a schema validator (e.g. <code>zod</code>/<code>express-validator</code>) for request bodies.</li>
+  </ul>
+
+  <h3>14.2 &nbsp; Code health <span class="badge put">medium</span></h3>
+  <ul>
+    <li><strong>Dead/duplicate files</strong> — <code>UserStoryPage copy.jsx</code>, <code>ai.controller.openai.mjs</code>, <code>ai.controller.willbelater.mjs</code>, and <code>server/oldURI.txt</code> should be removed or folded into the active code.</li>
+    <li><strong>Thick controllers</strong> — feature controllers mix HTTP, prompt building, and persistence. Extracting a service layer would improve testability.</li>
+    <li><strong>No shared contracts</strong> — client and server duplicate the permission/story shapes. Shared types (or an OpenAPI spec) would prevent drift.</li>
+    <li><strong>Configuration sprawl</strong> — many <code>*_MODEL</code>/<code>*_TIMEOUT_MS</code> knobs are read ad hoc; centralizing config parsing/validation at boot would catch misconfiguration early.</li>
+  </ul>
+
+  <h3>14.3 &nbsp; Reliability &amp; scale <span class="badge put">medium</span></h3>
+  <ul>
+    <li><strong>In-process jobs</strong> — the <code>activeJobs</code> Set and <code>setImmediate</code> execution tie jobs to a single instance. A real queue (e.g. BullMQ/Redis) would enable horizontal scaling and durable retries.</li>
+    <li><strong>Polling vs push</strong> — job progress is polled. Server-Sent Events or WebSockets would reduce latency and request volume.</li>
+    <li><strong>No structured logging/metrics</strong> — logging is <code>console.*</code>. Structured logs + request tracing would aid production debugging.</li>
+  </ul>
+
+  <h3>14.4 &nbsp; Quality &amp; delivery <span class="badge put">medium</span></h3>
+  <ul>
+    <li><strong>No automated tests</strong> — the server <code>test</code> script is a stub. Add unit tests around <code>callAI</code>, parsers, permission logic, and the job state machine.</li>
+    <li><strong>No CI pipeline</strong> — add lint + test + build gates on pull requests.</li>
+    <li><strong>No global error handler</strong> — Express error handling is per-controller; a centralized error middleware would standardize responses.</li>
+  </ul>
+
+  <h3>14.5 &nbsp; Suggested roadmap</h3>
+  <table>
+    <thead><tr><th style="width:18%">Phase</th><th>Focus</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Now</strong></td><td>Purge secrets &amp; <code>node_modules</code> from git; enforce required <code>JWT_SECRET</code>; lock down CORS; add input validation + rate limiting.</td></tr>
+      <tr><td><strong>Next</strong></td><td>Remove dead code; centralize config; add a global error handler and structured logging; introduce a test suite + CI.</td></tr>
+      <tr><td><strong>Later</strong></td><td>Move prototype jobs to a durable queue; replace polling with SSE/WebSockets; publish shared client/server types or an API spec.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer-note">
+    Generated from the <code>ai-ba-helper</code> repository. This document reflects the source as read at generation time; re-run <code>npm run build</code> in <code>docs/technical-overview/</code> to regenerate after code changes.
+  </div>
+</section>
+
+</div><!-- /page -->
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  document.getElementById("gen-date").textContent =
+    new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  if (window.mermaid) {
+    window.mermaid.initialize({
+      startOnLoad: true,
+      theme: "neutral",
+      flowchart: { useMaxWidth: true, htmlLabels: true },
+      sequence: { useMaxWidth: true },
+      er: { useMaxWidth: true }
+    });
+  }
+</script>
+</body>
+</html>
