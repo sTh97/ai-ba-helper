@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/Toast";
+import PageHeader from "../components/PageHeader";
+import ConfirmButton from "../components/ConfirmButton";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -46,6 +49,7 @@ const storyPreview = (story) => story.correctedText || story.originalText || "";
 
 const MarketingCollateral = () => {
   const { hasPermission } = useAuth();
+  const { showToast } = useToast();
   const canCreate = hasPermission("marketing", "create");
   const canUpdate = hasPermission("marketing", "update");
   const canDelete = hasPermission("marketing", "delete");
@@ -98,7 +102,7 @@ const MarketingCollateral = () => {
         setSelectedStoryIds(new Set(loaded.map((s) => s._id)));
         setSavedItems(itemsRes.data || []);
       })
-      .catch(() => alert("Failed to load project data"))
+      .catch(() => showToast("Failed to load project data", "error"))
       .finally(() => setLoadingStories(false));
   }, [selectedProjectId]);
 
@@ -149,7 +153,7 @@ const MarketingCollateral = () => {
   const openDialog = () => {
     if (!selectedProjectId || stories.length === 0) return;
     if (selectedCount === 0) {
-      alert("Select at least one user story to generate collateral.");
+      showToast("Select at least one user story to generate collateral.", "error");
       return;
     }
     setShowDialog(true);
@@ -157,7 +161,7 @@ const MarketingCollateral = () => {
 
   const handleRefine = async () => {
     if (!vision.trim()) {
-      alert("Write your vision first, then refine it with AI.");
+      showToast("Write your vision first, then refine it with AI.", "error");
       return;
     }
     setRefining(true);
@@ -172,7 +176,7 @@ const MarketingCollateral = () => {
       setVision(res.data.refinedPrompt || vision);
       setPromptRefined(true);
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to refine prompt");
+      showToast(err.response?.data?.error || "Failed to refine prompt", "error");
     } finally {
       setRefining(false);
     }
@@ -194,7 +198,7 @@ const MarketingCollateral = () => {
       setName(res.data.name || "");
       setShowDialog(false);
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to generate collateral");
+      showToast(err.response?.data?.error || "Failed to generate collateral", "error");
     } finally {
       setGenerating(false);
     }
@@ -202,7 +206,7 @@ const MarketingCollateral = () => {
 
   const handleSave = async () => {
     if (!generated?.content) {
-      alert("Generate collateral before saving.");
+      showToast("Generate collateral before saving.", "error");
       return;
     }
     setSaving(true);
@@ -223,9 +227,9 @@ const MarketingCollateral = () => {
         : await axios.post("/marketing", payload);
       setGenerated((prev) => ({ ...prev, _id: res.data._id, previewHtml: res.data.previewHtml || prev.previewHtml }));
       await refreshSaved();
-      alert(isUpdate ? "Collateral updated" : "Collateral saved");
+      showToast(isUpdate ? "Collateral updated" : "Collateral saved");
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to save collateral");
+      showToast(err.response?.data?.error || "Failed to save collateral", "error");
     } finally {
       setSaving(false);
     }
@@ -251,7 +255,7 @@ const MarketingCollateral = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      alert("Failed to download file");
+      showToast("Failed to download file", "error");
     } finally {
       setDownloading("");
     }
@@ -287,18 +291,18 @@ const MarketingCollateral = () => {
       setFormat(full.format || "pdf");
       setPromptRefined(Boolean(full.prompt));
     } catch {
-      alert("Failed to load saved collateral");
+      showToast("Failed to load saved collateral", "error");
     }
   };
 
   const handleDeleteSaved = async (id) => {
-    if (!window.confirm("Delete this saved collateral?")) return;
     try {
       await axios.delete(`/marketing/${id}`);
       setSavedItems((prev) => prev.filter((p) => p._id !== id));
       if (generated?._id === id) setGenerated(null);
+      showToast("Collateral deleted");
     } catch {
-      alert("Failed to delete");
+      showToast("Failed to delete", "error");
     }
   };
 
@@ -313,15 +317,11 @@ const MarketingCollateral = () => {
   };
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: "var(--text-primary)", margin: 0 }}>
-          Marketing Collateral
-        </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-          Pick a project and its user stories, describe your vision, and let AI craft marketing collateral as PDF, Word, or PowerPoint
-        </p>
-      </div>
+    <div className="ba-page" style={{ maxWidth: 960, margin: "0 auto" }}>
+      <PageHeader
+        title="Marketing Collateral"
+        subtitle="Pick a project and its user stories, describe your vision, and let AI craft marketing collateral as PDF, Word, or PowerPoint"
+      />
 
       <div style={{
         background: "var(--bg-surface)", border: "1px solid var(--border)",
@@ -485,7 +485,7 @@ const MarketingCollateral = () => {
                   ))}
                   <button onClick={() => loadSaved(p)} style={smallBtnStyle("accent")}>Open</button>
                   {canDelete && (
-                    <button onClick={() => handleDeleteSaved(p._id)} style={smallBtnStyle("red")}>Delete</button>
+                    <ConfirmButton onConfirm={() => handleDeleteSaved(p._id)} />
                   )}
                 </div>
               </div>
@@ -496,11 +496,16 @@ const MarketingCollateral = () => {
 
       {generated && (
         <div style={{
-          background: "var(--bg-surface)", border: "1px solid var(--border)",
-          borderLeft: "3px solid var(--accent)",
-          borderRadius: "var(--radius-lg)", padding: "22px 24px", marginBottom: 20,
+          background: "var(--ai-soft)", border: "1px solid var(--ai-border)",
+          borderLeft: "2px solid var(--ai-border)",
+          borderRadius: "var(--radius-lg)", padding: "22px 24px", marginBottom: 20, position: "relative",
         }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+          <span style={{
+            position: "absolute", top: 14, right: 16,
+            display: "inline-flex", alignItems: "center", gap: 4,
+            fontSize: 11, fontWeight: 600, color: "var(--ai-accent)", letterSpacing: "0.3px",
+          }}><span aria-hidden>✦</span> AI Generated</span>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap", paddingTop: 8 }}>
             <div style={{ flex: 1, minWidth: 220 }}>
               <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 Collateral name
@@ -548,8 +553,8 @@ const MarketingCollateral = () => {
           </div>
 
           <div style={{
-            border: "1px solid var(--border)", borderRadius: "var(--radius-lg)",
-            overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
+            border: "1px solid var(--ai-border)", borderRadius: "var(--radius-lg)",
+            overflow: "hidden",
           }}>
             <div style={{
               background: "#1e1e2e", padding: "10px 14px", display: "flex", alignItems: "center", gap: 10,

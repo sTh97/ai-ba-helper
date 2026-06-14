@@ -1,6 +1,6 @@
 import { PAGE_SIZE_OPTIONS, getPageNumbers, getTotalPages } from "../utils/pagination";
 
-const Pagination = ({ totalItems, page, pageSize, onPageChange, onPageSizeChange }) => {
+const Pagination = ({ totalItems, page, pageSize, onPageChange, onPageSizeChange, entityLabel = "items" }) => {
   const totalPages = getTotalPages(totalItems, pageSize);
 
   if (totalItems === 0) return null;
@@ -46,7 +46,7 @@ const Pagination = ({ totalItems, page, pageSize, onPageChange, onPageSizeChange
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--text-muted)" }}>
         <span>
-          {start}–{end} of {totalItems}
+          Showing {start}–{end} of {totalItems} {entityLabel}
         </span>
         <span style={{ color: "var(--border-bright)" }}>|</span>
         <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -76,9 +76,9 @@ const Pagination = ({ totalItems, page, pageSize, onPageChange, onPageSizeChange
           type="button"
           disabled={safePage <= 1}
           onClick={() => onPageChange(safePage - 1)}
-          style={{ ...btnBase, opacity: safePage <= 1 ? 0.4 : 1, cursor: safePage <= 1 ? "not-allowed" : "pointer" }}
+          style={{ ...btnBase, padding: "0 12px", opacity: safePage <= 1 ? 0.4 : 1, cursor: safePage <= 1 ? "not-allowed" : "pointer" }}
         >
-          ‹
+          ← Prev
         </button>
 
         {pageNumbers.map((p) =>
@@ -105,9 +105,9 @@ const Pagination = ({ totalItems, page, pageSize, onPageChange, onPageSizeChange
           type="button"
           disabled={safePage >= totalPages}
           onClick={() => onPageChange(safePage + 1)}
-          style={{ ...btnBase, opacity: safePage >= totalPages ? 0.4 : 1, cursor: safePage >= totalPages ? "not-allowed" : "pointer" }}
+          style={{ ...btnBase, padding: "0 12px", opacity: safePage >= totalPages ? 0.4 : 1, cursor: safePage >= totalPages ? "not-allowed" : "pointer" }}
         >
-          ›
+          Next →
         </button>
       </div>
     </div>

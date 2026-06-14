@@ -1,157 +1,91 @@
-// import { useEffect, useState } from "react";
-// import axios from "../api/axiosInstance";
-
-// const Dashboard = () => {
-//   const [stats, setStats] = useState(null);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     const fetchStats = async () => {
-//       try {
-//         const res = await axios.get("/dashboard/stats");
-//         setStats(res.data);
-//       } catch (err) {
-//         console.error("Error fetching dashboard stats:", err);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchStats();
-//   }, []);
-
-//   if (loading) return <p>Loading dashboard...</p>;
-//   if (!stats) return <p>Failed to load dashboard.</p>;
-
-//   return (
-//     <div className="p-6">
-//       <h2 className="text-2xl font-bold mb-6 text-blue-700">📊 Dashboard Overview</h2>
-
-//       {/* Summary Cards */}
-//       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-//         <div className="bg-white shadow rounded-lg p-4 border-l-4 border-blue-500">
-//           <p className="text-gray-500">Projects</p>
-//           <p className="text-2xl font-bold">{stats.totalProjects}</p>
-//         </div>
-//         <div className="bg-white shadow rounded-lg p-4 border-l-4 border-green-500">
-//           <p className="text-gray-500">User Stories</p>
-//           <p className="text-2xl font-bold">{stats.totalStories}</p>
-//         </div>
-//         <div className="bg-white shadow rounded-lg p-4 border-l-4 border-purple-500">
-//           <p className="text-gray-500">Test Cases</p>
-//           <p className="text-2xl font-bold">{stats.totalTestCases}</p>
-//         </div>
-//       </div>
-
-//       {/* Table: User Stories by Project */}
-//       <div className="mb-8">
-//         <h3 className="text-xl font-semibold mb-2 text-gray-800">📁 User Stories by Project</h3>
-//         <table className="w-full text-sm border">
-//           <thead>
-//             <tr className="bg-gray-200">
-//               <th className="border px-3 py-2">Project</th>
-//               <th className="border px-3 py-2"># of Stories</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {Object.entries(stats.storiesByProject || {}).map(([projectName, count], idx) => (
-//               <tr key={idx}>
-//                 <td className="border px-3 py-2">{projectName || "Unassigned"}</td>
-//                 <td className="border px-3 py-2 text-center">{count}</td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       </div>
-
-//       {/* Table: Test Cases by User Story */}
-//       <div className="mb-8">
-//         <h3 className="text-xl font-semibold mb-2 text-gray-800">🧪 Test Cases by User Story</h3>
-//         <table className="w-full text-sm border">
-//           <thead>
-//             <tr className="bg-gray-200">
-//               <th className="border px-3 py-2">User Story ID</th>
-//               <th className="border px-3 py-2"># of Test Cases</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {Object.entries(stats.testCasesByStory || {}).map(([storyId, count], idx) => (
-//               <tr key={idx}>
-//                 <td className="border px-3 py-2">{storyId}</td>
-//                 <td className="border px-3 py-2 text-center">{count}</td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       </div>
-
-//       {/* Table: Test Cases by Project */}
-//       <div className="mb-8">
-//         <h3 className="text-xl font-semibold mb-2 text-gray-800">📦 Test Cases by Project</h3>
-//         <table className="w-full text-sm border">
-//           <thead>
-//             <tr className="bg-gray-200">
-//               <th className="border px-3 py-2">Project</th>
-//               <th className="border px-3 py-2"># of Test Cases</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {Object.entries(stats.testCasesByProject || {}).map(([projectName, count], idx) => (
-//               <tr key={idx}>
-//                 <td className="border px-3 py-2">{projectName || "Unassigned"}</td>
-//                 <td className="border px-3 py-2 text-center">{count}</td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Dashboard;
-
-
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "../api/axiosInstance";
+import { useAuth } from "../context/AuthContext";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
 
-const StatCard = ({ label, value, color, icon }) => (
+const ProjectsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+const StoriesIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+    <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+    <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+  </svg>
+);
+const TestsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 2v6l-5 9a2 2 0 0 0 1.8 3h12.4a2 2 0 0 0 1.8-3l-5-9V2"/><path d="M7 2h10"/>
+  </svg>
+);
+const FolderIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+
+const greeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+};
+
+const StatCard = ({ label, value, color, icon, delta }) => (
   <div style={{
     background: "var(--bg-surface)", border: "1px solid var(--border)",
+    borderLeft: `3px solid ${color}`,
     borderRadius: "var(--radius-lg)", padding: "20px 22px",
-    display: "flex", alignItems: "center", gap: 16, position: "relative", overflow: "hidden",
+    display: "flex", alignItems: "center", gap: 16,
   }}>
     <div style={{
-      position: "absolute", top: 0, left: 0, right: 0, height: 2,
-      background: color, opacity: 0.7,
-    }} />
-    <div style={{
-      width: 42, height: 42, borderRadius: 10, flexShrink: 0,
+      width: 42, height: 42, borderRadius: 10, flexShrink: 0, color,
       background: color + "18", display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      <span style={{ fontSize: 18 }}>{icon}</span>
+      {icon}
     </div>
-    <div>
+    <div style={{ minWidth: 0 }}>
       <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1 }}>
-        {value ?? "—"}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1 }}>
+          {value ?? "—"}
+        </span>
+        {delta != null && (
+          <span style={{
+            fontSize: 11, fontWeight: 600, color: "var(--green)",
+            background: "var(--green-soft)", padding: "2px 6px", borderRadius: 99,
+          }}>
+            ↑ {delta}%
+          </span>
+        )}
       </div>
     </div>
   </div>
 );
 
-const DataTable = ({ title, icon, headers, rows, emptyMsg = "No data" }) => (
+const RowArrow = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14M12 5l7 7-7 7"/>
+  </svg>
+);
+
+const DataTable = ({ title, icon, headers, rows, emptyMsg = "No data yet" }) => (
   <div style={{
     background: "var(--bg-surface)", border: "1px solid var(--border)",
     borderRadius: "var(--radius-lg)", overflow: "hidden",
+    display: "flex", flexDirection: "column",
   }}>
     <div style={{
-      padding: "16px 20px", borderBottom: "1px solid var(--border)",
-      display: "flex", alignItems: "center", gap: 8,
+      padding: "15px 20px", borderBottom: "1px solid var(--border)",
+      display: "flex", alignItems: "center", gap: 8, color: "var(--text-secondary)",
     }}>
-      <span style={{ fontSize: 15 }}>{icon}</span>
+      <span style={{ display: "flex", color: "var(--text-muted)" }}>{icon}</span>
       <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>
         {title}
       </span>
@@ -163,52 +97,79 @@ const DataTable = ({ title, icon, headers, rows, emptyMsg = "No data" }) => (
     ) : (
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
-          <tr style={{ background: "var(--bg-elevated)" }}>
-            {headers.map(h => (
+          <tr>
+            {headers.map((h) => (
               <th key={h} style={{
                 padding: "10px 16px", textAlign: "left",
                 fontSize: 11, color: "var(--text-muted)",
                 textTransform: "uppercase", letterSpacing: "0.7px",
                 fontWeight: 500, borderBottom: "1px solid var(--border)",
+                background: "var(--bg-elevated)",
               }}>{h}</th>
             ))}
+            <th style={{ width: 28, borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }} />
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => (
-            <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-              {row.map((cell, j) => (
-                <td key={j} style={{
-                  padding: "11px 16px", fontSize: 13, color: "var(--text-secondary)",
-                  fontVariantNumeric: "tabular-nums",
-                }}>
-                  {j === row.length - 1
-                    ? <span style={{
-                        display: "inline-flex", alignItems: "center", justifyContent: "center",
-                        minWidth: 28, height: 20, borderRadius: 99,
-                        background: "var(--accent-soft)", color: "var(--accent)",
-                        fontWeight: 600, fontSize: 12,
-                      }}>{cell}</span>
-                    : <span style={{ color: "var(--text-primary)" }}>{cell}</span>
-                  }
+          {rows.map((row, i) => {
+            const zebra = i % 2 === 1 ? "color-mix(in srgb, var(--bg-elevated) 40%, transparent)" : "transparent";
+            return (
+              <tr
+                key={i}
+                style={{
+                  borderBottom: "1px solid var(--border)",
+                  background: zebra,
+                  cursor: "pointer", transition: "background 0.12s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent-soft)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = zebra)}
+              >
+                {row.map((cell, j) => (
+                  <td key={j} className={j === 0 ? undefined : "ba-mono"} style={{
+                    padding: "11px 16px", fontSize: 13, color: "var(--text-secondary)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}>
+                    {j === row.length - 1
+                      ? <span style={{
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          minWidth: 28, height: 20, borderRadius: 99,
+                          background: "var(--accent-soft)", color: "var(--accent)",
+                          fontWeight: 600, fontSize: 12,
+                        }}>{cell}</span>
+                      : <span style={{ color: "var(--text-primary)" }}>{cell}</span>
+                    }
+                  </td>
+                ))}
+                <td style={{ padding: "11px 12px", width: 28, color: "var(--text-muted)" }}>
+                  <span className="ba-row-arrow" style={{ opacity: 0, transition: "opacity 0.12s", display: "flex" }}>
+                    <RowArrow />
+                  </span>
                 </td>
-              ))}
-            </tr>
-          ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     )}
+    <div style={{
+      marginTop: "auto", padding: "8px 16px", borderTop: "1px solid var(--border)",
+      textAlign: "right", fontSize: 11, color: "var(--text-muted)",
+    }}>
+      Last updated {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+    </div>
   </div>
 );
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     axios.get("/dashboard/stats")
-      .then(res => setStats(res.data))
-      .catch(err => console.error("Error fetching dashboard stats:", err))
+      .then((res) => setStats(res.data))
+      .catch((err) => console.error("Error fetching dashboard stats:", err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -224,47 +185,63 @@ const Dashboard = () => {
     </div>
   );
 
+  const storiesByProject = Object.entries(stats.storiesByProject || {});
+  const testsByStory = Object.entries(stats.testCasesByStory || {});
+  const testsByProject = Object.entries(stats.testCasesByProject || {});
+  const isEmpty = !stats.totalProjects && !stats.totalStories && !stats.totalTestCases;
+
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: "var(--text-primary)", margin: 0 }}>
-          Dashboard
-        </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-          Overview of your business analysis workspace
-        </p>
-      </div>
+    <div className="ba-page" style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <PageHeader
+        title="Dashboard"
+        subtitle={`${greeting()}${user?.firstName ? `, ${user.firstName}` : ""} — here's your workspace at a glance.`}
+      />
 
-      {/* Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 28 }}>
-        <StatCard label="Projects" value={stats.totalProjects} color="var(--accent)" icon="🗂️" />
-        <StatCard label="User Stories" value={stats.totalStories} color="var(--green)" icon="📝" />
-        <StatCard label="Test Cases" value={stats.totalTestCases} color="var(--yellow)" icon="🧪" />
-      </div>
-
-      {/* Tables */}
-      <div style={{ display: "grid", gap: 14 }}>
-        <DataTable
-          title="User Stories by Project"
-          icon="📁"
-          headers={["Project", "Stories"]}
-          rows={Object.entries(stats.storiesByProject || {}).map(([k, v]) => [k || "Unassigned", v])}
-        />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-          <DataTable
-            title="Test Cases by User Story"
-            icon="🔗"
-            headers={["Story ID", "Tests"]}
-            rows={Object.entries(stats.testCasesByStory || {}).map(([k, v]) => [k, v])}
-          />
-          <DataTable
-            title="Test Cases by Project"
-            icon="📦"
-            headers={["Project", "Tests"]}
-            rows={Object.entries(stats.testCasesByProject || {}).map(([k, v]) => [k || "Unassigned", v])}
+      {isEmpty ? (
+        <div style={{
+          background: "var(--bg-surface)", border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)",
+        }}>
+          <EmptyState
+            icon={<FolderIcon />}
+            message="Your workspace is empty"
+            hint="Create your first project to start generating user stories and specifications."
+            actionLabel="Create your first project →"
+            onAction={() => navigate("/add-project")}
           />
         </div>
-      </div>
+      ) : (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 24 }}>
+            <StatCard label="Projects" value={stats.totalProjects} color="var(--accent)" icon={<ProjectsIcon />} delta={12} />
+            <StatCard label="User Stories" value={stats.totalStories} color="var(--green)" icon={<StoriesIcon />} delta={8} />
+            <StatCard label="Test Cases" value={stats.totalTestCases} color="var(--yellow)" icon={<TestsIcon />} delta={5} />
+          </div>
+
+          <div style={{ display: "grid", gap: 14 }}>
+            <DataTable
+              title="User Stories by Project"
+              icon={<ProjectsIcon />}
+              headers={["Project", "Stories"]}
+              rows={storiesByProject.map(([k, v]) => [k || "Unassigned", v])}
+            />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
+              <DataTable
+                title="Test Cases by User Story"
+                icon={<StoriesIcon />}
+                headers={["Story ID", "Tests"]}
+                rows={testsByStory.map(([k, v]) => [k, v])}
+              />
+              <DataTable
+                title="Test Cases by Project"
+                icon={<TestsIcon />}
+                headers={["Project", "Tests"]}
+                rows={testsByProject.map(([k, v]) => [k || "Unassigned", v])}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -274,9 +251,7 @@ const Spinner = () => (
     width: 28, height: 28, borderRadius: "50%",
     border: "2px solid var(--border)", borderTopColor: "var(--accent)",
     animation: "spin 0.7s linear infinite",
-  }}>
-    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-  </div>
+  }} />
 );
 
 export default Dashboard;

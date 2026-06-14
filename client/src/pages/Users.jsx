@@ -1,16 +1,55 @@
 import { useState, useEffect } from "react";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/Toast";
+import PageHeader from "../components/PageHeader";
+import Badge from "../components/Badge";
+import EmptyState from "../components/EmptyState";
+import ConfirmButton from "../components/ConfirmButton";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
   background: "var(--bg-elevated)", border: "1px solid var(--border)",
   borderRadius: "var(--radius)", color: "var(--text-primary)",
   fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+  transition: "border-color 0.15s",
+};
+
+const focusOn = (e) => (e.target.style.borderColor = "var(--accent)");
+const focusOff = (e) => (e.target.style.borderColor = "var(--border)");
+
+const roleBadgeColor = (roleName = "") => {
+  const r = roleName.toLowerCase();
+  if (r.includes("admin")) return "accent";
+  if (r.includes("analyst") || r.includes("ba")) return "green";
+  if (r.includes("manager") || r.includes("lead")) return "purple";
+  return "muted";
+};
+
+const UsersIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+);
+
+const Avatar = ({ first, last }) => {
+  const initials = `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase() || "U";
+  return (
+    <span style={{
+      width: 28, height: 28, borderRadius: 99, flexShrink: 0,
+      background: "var(--header-gradient)", color: "white",
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      fontSize: 11, fontWeight: 700,
+    }}>
+      {initials}
+    </span>
+  );
 };
 
 const Users = () => {
   const { user: currentUser, hasPermission } = useAuth();
+  const { showToast } = useToast();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [firstName, setFirstName] = useState("");
@@ -19,17 +58,11 @@ const Users = () => {
   const [password, setPassword] = useState("");
   const [roleId, setRoleId] = useState("");
   const [editingId, setEditingId] = useState(null);
-  const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const canCreate = hasPermission("users", "create");
   const canUpdate = hasPermission("users", "update");
   const canDelete = hasPermission("users", "delete");
-
-  const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 2800);
-  };
 
   const fetchData = async () => {
     try {
@@ -39,9 +72,7 @@ const Users = () => {
       ]);
       setUsers(usersRes.data);
       setRoles(rolesRes.data);
-      if (!roleId && rolesRes.data.length > 0) {
-        setRoleId(rolesRes.data[0]._id);
-      }
+      if (!roleId && rolesRes.data.length > 0) setRoleId(rolesRes.data[0]._id);
     } catch (err) {
       showToast(err.response?.data?.error || "Failed to load users", "error");
     }
@@ -94,7 +125,6 @@ const Users = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this user?")) return;
     try {
       await axios.delete(`/users/${id}`);
       showToast("User deleted");
@@ -116,62 +146,43 @@ const Users = () => {
   };
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto" }}>
-      {toast && (
-        <div style={{
-          position: "fixed", top: 20, right: 20, zIndex: 999,
-          padding: "12px 20px", borderRadius: "var(--radius)",
-          background: toast.type === "error" ? "var(--red-soft)" : "var(--green-soft)",
-          border: `1px solid ${toast.type === "error" ? "var(--red)" : "var(--green)"}`,
-          color: toast.type === "error" ? "var(--red)" : "var(--green)",
-          fontSize: 13, fontWeight: 500,
-        }}>
-          {toast.type === "error" ? "✗ " : "✓ "}{toast.msg}
-        </div>
-      )}
-
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: "var(--text-primary)", margin: 0 }}>
-          User Management
-        </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-          Create users and assign roles with defined permissions
-        </p>
-      </div>
+    <div className="ba-page" style={{ maxWidth: 960, margin: "0 auto" }}>
+      <PageHeader
+        title="User Management"
+        subtitle="Create users and assign roles with defined permissions"
+      />
 
       {(canCreate || (canUpdate && editingId)) && (
         <div style={{
           background: "var(--bg-surface)", border: "1px solid var(--border)",
           borderRadius: "var(--radius-lg)", padding: "22px 24px", marginBottom: 20,
         }}>
-          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 14, color: "var(--text-primary)", margin: "0 0 16px" }}>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 15, color: "var(--text-primary)", margin: "0 0 16px" }}>
             {editingId ? "Edit User" : "Create User"}
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
             <div>
               <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>First Name *</label>
-              <input style={inputStyle} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              <input style={inputStyle} value={firstName} onChange={(e) => setFirstName(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
             </div>
             <div>
               <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>Last Name</label>
-              <input style={inputStyle} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              <input style={inputStyle} value={lastName} onChange={(e) => setLastName(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
             </div>
             <div>
               <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>Email *</label>
-              <input type="email" style={inputStyle} value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input type="email" style={inputStyle} value={email} onChange={(e) => setEmail(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
             </div>
             <div>
               <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>
                 Password {editingId ? "(leave blank to keep)" : "*"}
               </label>
-              <input type="password" style={inputStyle} value={password} onChange={(e) => setPassword(e.target.value)} />
+              <input type="password" style={inputStyle} value={password} onChange={(e) => setPassword(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>Role *</label>
-              <select style={inputStyle} value={roleId} onChange={(e) => setRoleId(e.target.value)}>
-                {roles.map((r) => (
-                  <option key={r._id} value={r._id}>{r.name}</option>
-                ))}
+              <select style={{ ...inputStyle, cursor: "pointer" }} value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+                {roles.map((r) => <option key={r._id} value={r._id}>{r.name}</option>)}
               </select>
             </div>
           </div>
@@ -204,74 +215,72 @@ const Users = () => {
         background: "var(--bg-surface)", border: "1px solid var(--border)",
         borderRadius: "var(--radius-lg)", overflow: "hidden",
       }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
-          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>
-            All Users
-            <span style={{ marginLeft: 8, fontSize: 11, padding: "2px 8px", background: "var(--bg-elevated)", borderRadius: 99, color: "var(--text-muted)" }}>
-              {users.length}
-            </span>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>All Users</span>
+          <span style={{ fontSize: 11, padding: "2px 8px", background: "var(--bg-elevated)", borderRadius: 99, color: "var(--text-muted)" }}>
+            {users.length}
           </span>
         </div>
         {users.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>
-            No users found.
-          </div>
+          <EmptyState icon={<UsersIcon />} message="No users found" hint="Create a user above to get started." />
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--bg-elevated)" }}>
-                {["Name", "Email", "Role", "Status", ""].map((h) => (
+                {["User", "Email", "Role", "Status", ""].map((h) => (
                   <th key={h} style={{
                     padding: "10px 16px", textAlign: "left", fontSize: 11,
                     color: "var(--text-muted)", textTransform: "uppercase",
-                    letterSpacing: "0.7px", borderBottom: "1px solid var(--border)",
+                    letterSpacing: "0.7px", borderBottom: "1px solid var(--border)", fontWeight: 600,
                   }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
-                <tr key={u._id} style={{ borderBottom: "1px solid var(--border)" }}>
-                  <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
-                    {u.firstName} {u.lastName}
+              {users.map((u, idx) => (
+                <tr key={u._id} style={{ borderBottom: "1px solid var(--border)", background: idx % 2 === 1 ? "var(--bg-elevated)" : "transparent" }}>
+                  <td style={{ padding: "10px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <Avatar first={u.firstName} last={u.lastName} />
+                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
+                        {u.firstName} {u.lastName}
+                      </span>
+                    </div>
                   </td>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-secondary)" }}>{u.email}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-secondary)" }}>
-                    {u.role?.name || "—"}
+                  <td style={{ padding: "10px 16px", fontSize: 12, color: "var(--text-secondary)" }}>{u.email}</td>
+                  <td style={{ padding: "10px 16px" }}>
+                    {u.role?.name ? <Badge color={roleBadgeColor(u.role.name)}>{u.role.name}</Badge> : <span style={{ color: "var(--text-muted)" }}>—</span>}
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span style={{
-                      padding: "2px 8px", borderRadius: 99, fontSize: 11,
-                      background: u.isActive ? "var(--green-soft)" : "var(--red-soft)",
-                      color: u.isActive ? "var(--green)" : "var(--red)",
-                    }}>
-                      {u.isActive ? "Active" : "Inactive"}
-                    </span>
+                  <td style={{ padding: "10px 16px" }}>
+                    <span
+                      title={u.isActive ? "Active" : "Inactive"}
+                      style={{
+                        display: "inline-block", width: 8, height: 8, borderRadius: 99,
+                        background: u.isActive ? "var(--green)" : "var(--red)",
+                        boxShadow: u.isActive ? "0 0 6px var(--green)" : "none",
+                      }}
+                    />
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
+                  <td style={{ padding: "10px 16px" }}>
                     <div style={{ display: "flex", gap: 6 }}>
                       {canUpdate && (
                         <>
                           <button onClick={() => handleEdit(u)} style={{
                             padding: "5px 12px", borderRadius: 6,
                             background: "var(--accent-soft)", border: "1px solid var(--accent)22",
-                            color: "var(--accent)", fontSize: 12, fontWeight: 500,
+                            color: "var(--accent)", fontSize: 12, fontWeight: 500, cursor: "pointer",
                           }}>Edit</button>
                           {u._id !== currentUser?._id && (
                             <button onClick={() => toggleActive(u)} style={{
                               padding: "5px 12px", borderRadius: 6,
                               background: "var(--bg-elevated)", border: "1px solid var(--border)",
-                              color: "var(--text-secondary)", fontSize: 12, fontWeight: 500,
+                              color: "var(--text-secondary)", fontSize: 12, fontWeight: 500, cursor: "pointer",
                             }}>{u.isActive ? "Deactivate" : "Activate"}</button>
                           )}
                         </>
                       )}
                       {canDelete && u._id !== currentUser?._id && (
-                        <button onClick={() => handleDelete(u._id)} style={{
-                          padding: "5px 12px", borderRadius: 6,
-                          background: "var(--red-soft)", border: "1px solid var(--red)22",
-                          color: "var(--red)", fontSize: 12, fontWeight: 500,
-                        }}>Delete</button>
+                        <ConfirmButton onConfirm={() => handleDelete(u._id)} />
                       )}
                     </div>
                   </td>

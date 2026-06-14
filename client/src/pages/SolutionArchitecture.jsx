@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/Toast";
+import PageHeader from "../components/PageHeader";
+import ConfirmButton from "../components/ConfirmButton";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -28,6 +31,7 @@ const storyPreview = (story) => story.correctedText || story.originalText || "";
 
 const SolutionArchitecture = () => {
   const { hasPermission } = useAuth();
+  const { showToast } = useToast();
   const canCreate = hasPermission("solution", "create");
   const canUpdate = hasPermission("solution", "update");
   const canDelete = hasPermission("solution", "delete");
@@ -77,7 +81,7 @@ const SolutionArchitecture = () => {
         setSelectedStoryIds(new Set(loaded.map((s) => s._id)));
         setSavedItems(itemsRes.data || []);
       })
-      .catch(() => alert("Failed to load project data"))
+      .catch(() => showToast("Failed to load project data", "error"))
       .finally(() => setLoadingStories(false));
   }, [selectedProjectId]);
 
@@ -128,7 +132,7 @@ const SolutionArchitecture = () => {
   const openDialog = () => {
     if (!selectedProjectId || stories.length === 0) return;
     if (selectedCount === 0) {
-      alert("Select at least one user story to generate an architecture.");
+      showToast("Select at least one user story to generate an architecture.", "error");
       return;
     }
     setShowDialog(true);
@@ -136,7 +140,7 @@ const SolutionArchitecture = () => {
 
   const handleRefine = async () => {
     if (!vision.trim()) {
-      alert("Write your constraints first, then refine with AI.");
+      showToast("Write your constraints first, then refine with AI.", "error");
       return;
     }
     setRefining(true);
@@ -149,7 +153,7 @@ const SolutionArchitecture = () => {
       setVision(res.data.refinedPrompt || vision);
       setPromptRefined(true);
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to refine prompt");
+      showToast(err.response?.data?.error || "Failed to refine prompt", "error");
     } finally {
       setRefining(false);
     }
@@ -168,7 +172,7 @@ const SolutionArchitecture = () => {
       setName(res.data.name || "");
       setShowDialog(false);
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to generate solution architecture");
+      showToast(err.response?.data?.error || "Failed to generate solution architecture", "error");
     } finally {
       setGenerating(false);
     }
@@ -176,7 +180,7 @@ const SolutionArchitecture = () => {
 
   const handleSave = async () => {
     if (!generated?.content) {
-      alert("Generate an architecture before saving.");
+      showToast("Generate an architecture before saving.", "error");
       return;
     }
     setSaving(true);
@@ -195,9 +199,9 @@ const SolutionArchitecture = () => {
         : await axios.post("/solutions", payload);
       setGenerated((prev) => ({ ...prev, _id: res.data._id }));
       await refreshSaved();
-      alert(isUpdate ? "Architecture updated" : "Architecture saved");
+      showToast(isUpdate ? "Architecture updated" : "Architecture saved");
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to save architecture");
+      showToast(err.response?.data?.error || "Failed to save architecture", "error");
     } finally {
       setSaving(false);
     }
@@ -221,18 +225,18 @@ const SolutionArchitecture = () => {
       setPromptRefined(Boolean(full.prompt));
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
-      alert("Failed to load saved architecture");
+      showToast("Failed to load saved architecture", "error");
     }
   };
 
   const handleDeleteSaved = async (id) => {
-    if (!window.confirm("Delete this saved architecture?")) return;
     try {
       await axios.delete(`/solutions/${id}`);
       setSavedItems((prev) => prev.filter((p) => p._id !== id));
       if (generated?._id === id) setGenerated(null);
+      showToast("Architecture deleted");
     } catch {
-      alert("Failed to delete");
+      showToast("Failed to delete", "error");
     }
   };
 
@@ -245,15 +249,11 @@ const SolutionArchitecture = () => {
   };
 
   return (
-    <div style={{ maxWidth: 980, margin: "0 auto" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: "var(--text-primary)", margin: 0 }}>
-          Solution Architecture
-        </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-          Pick a project and its user stories, describe constraints, and let AI design the tech stack, technical viability, feature linkage, schemas, ERD, and project workflow
-        </p>
-      </div>
+    <div className="ba-page" style={{ maxWidth: 980, margin: "0 auto" }}>
+      <PageHeader
+        title="Solution Architecture"
+        subtitle="Pick a project and its user stories, describe constraints, and let AI design the tech stack, technical viability, feature linkage, schemas, ERD, and project workflow"
+      />
 
       <div style={{
         background: "var(--bg-surface)", border: "1px solid var(--border)",
@@ -405,7 +405,7 @@ const SolutionArchitecture = () => {
                 <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
                   <button onClick={() => loadSaved(p)} style={smallBtnStyle("accent")}>Open</button>
                   {canDelete && (
-                    <button onClick={() => handleDeleteSaved(p._id)} style={smallBtnStyle("red")}>Delete</button>
+                    <ConfirmButton onConfirm={() => handleDeleteSaved(p._id)} label="Delete" />
                   )}
                 </div>
               </div>
@@ -416,11 +416,16 @@ const SolutionArchitecture = () => {
 
       {generated && (
         <div style={{
-          background: "var(--bg-surface)", border: "1px solid var(--border)",
-          borderLeft: "3px solid var(--accent)",
-          borderRadius: "var(--radius-lg)", padding: "22px 24px", marginBottom: 20,
+          background: "var(--ai-soft)", border: "1px solid var(--ai-border)",
+          borderLeft: "2px solid var(--ai-border)",
+          borderRadius: "var(--radius-lg)", padding: "22px 24px", marginBottom: 20, position: "relative",
         }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+          <span style={{
+            position: "absolute", top: 14, right: 16,
+            display: "inline-flex", alignItems: "center", gap: 4,
+            fontSize: 11, fontWeight: 600, color: "var(--ai-accent)", letterSpacing: "0.3px",
+          }}><span aria-hidden>✦</span> AI Generated</span>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap", paddingTop: 8 }}>
             <div style={{ flex: 1, minWidth: 220 }}>
               <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 Architecture name

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios, { pollWithTimeout } from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/Toast";
+import ConfirmButton from "../components/ConfirmButton";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -70,6 +72,7 @@ const normalizeLoadedPrototype = (proto) => ensurePrototypeForSave(proto) || pro
 
 const CreateApplication = () => {
   const { hasPermission } = useAuth();
+  const { showToast } = useToast();
   const canCreate = hasPermission("applications", "create");
   const canUpdate = hasPermission("applications", "update");
   const canDelete = hasPermission("applications", "delete");
@@ -138,7 +141,7 @@ const CreateApplication = () => {
         setSelectedStoryIds(new Set(loaded.map((s) => s._id)));
         setSavedPrototypes(prototypesRes.data || []);
       })
-      .catch(() => alert("Failed to load project data"))
+      .catch(() => showToast("Failed to load project data", "error"))
       .finally(() => setLoadingStories(false));
   }, [selectedProjectId]);
 
@@ -193,7 +196,7 @@ const CreateApplication = () => {
   const openBriefDialog = () => {
     if (!selectedProjectId || stories.length === 0) return;
     if (selectedCount === 0) {
-      alert("Select at least one user story to generate a prototype.");
+      showToast("Select at least one user story to generate a prototype.", "error");
       return;
     }
     setShowBriefDialog(true);
@@ -201,7 +204,7 @@ const CreateApplication = () => {
 
   const handleRefinePrompt = async () => {
     if (!prototypePrompt.trim()) {
-      alert("Write a rough description first, then refine it with AI.");
+      showToast("Write a rough description first, then refine it with AI.", "error");
       return;
     }
     setRefiningPrompt(true);
@@ -215,7 +218,7 @@ const CreateApplication = () => {
       setPromptRefined(true);
     } catch (err) {
       const msg = err.response?.data?.error || "Failed to refine prompt";
-      alert(msg);
+      showToast(msg, "error");
     } finally {
       setRefiningPrompt(false);
     }
@@ -275,7 +278,7 @@ const CreateApplication = () => {
     }
 
     if (data.status === "failed" || data.status === "cancelled") {
-      alert(data.error || `Prototype job ${data.status}`);
+      showToast(data.error || `Prototype job ${data.status}`, "error");
       setActiveJobId(null);
       setGenerating(false);
       setMerging(false);
@@ -336,7 +339,7 @@ const CreateApplication = () => {
       setActiveJobId(res.data.jobId);
     } catch (err) {
       const msg = err.response?.data?.error || "Failed to start prototype generation";
-      alert(msg);
+      showToast(msg, "error");
       setGenerating(false);
     }
   };
@@ -346,7 +349,7 @@ const CreateApplication = () => {
 
     const normalized = ensurePrototypeForSave(generated.prototype);
     if (!normalized?.fullDocument && !normalized?.html) {
-      alert("Prototype preview code is missing. Generate or reload the prototype first.");
+      showToast("Prototype preview code is missing. Generate or reload the prototype first.", "error");
       return;
     }
 
@@ -370,7 +373,7 @@ const CreateApplication = () => {
       setActiveJobId(res.data.jobId);
     } catch (err) {
       const msg = err.response?.data?.error || "Failed to start prototype update";
-      alert(msg);
+      showToast(msg, "error");
       setUpdating(false);
       setShowUpdateDialog(true);
     }
@@ -378,7 +381,7 @@ const CreateApplication = () => {
 
   const handleMerge = async () => {
     if (mergeSelectedCount < 2) {
-      alert("Select at least 2 saved prototypes with code to merge.");
+      showToast("Select at least 2 saved prototypes with code to merge.", "error");
       return;
     }
     setShowMergeDialog(false);
@@ -398,7 +401,7 @@ const CreateApplication = () => {
       setActiveJobId(res.data.jobId);
     } catch (err) {
       const msg = err.response?.data?.error || "Failed to start merge";
-      alert(msg);
+      showToast(msg, "error");
       setMerging(false);
     }
   };
@@ -419,11 +422,11 @@ const CreateApplication = () => {
 
   const handleSave = async () => {
     if (!generated?.prototype) {
-      alert("Generate a prototype before saving.");
+      showToast("Generate a prototype before saving.", "error");
       return;
     }
     if (!generated.prototype.fullDocument && !generated.prototype.html) {
-      alert("Prototype code is missing. Regenerate the prototype and try again.");
+      showToast("Prototype code is missing. Regenerate the prototype and try again.", "error");
       return;
     }
 
@@ -452,10 +455,10 @@ const CreateApplication = () => {
 
       const listRes = await axios.get(`/applications?projectId=${selectedProjectId}`);
       setSavedPrototypes(listRes.data);
-      alert(isUpdate ? "Prototype updated successfully" : "Prototype saved successfully");
+      showToast(isUpdate ? "Prototype updated successfully" : "Prototype saved successfully");
     } catch (err) {
       const msg = err.response?.data?.error || "Failed to save prototype";
-      alert(msg);
+      showToast(msg, "error");
     } finally {
       setSaving(false);
     }
@@ -486,17 +489,17 @@ const CreateApplication = () => {
       setShowCode(false);
       setCodeTab("html");
     } catch {
-      alert("Failed to load saved prototype");
+      showToast("Failed to load saved prototype", "error");
     }
   };
 
   const handleDeleteSaved = async (id) => {
-    if (!window.confirm("Delete this saved prototype?")) return;
     try {
       await axios.delete(`/applications/${id}`);
       setSavedPrototypes((prev) => prev.filter((p) => p._id !== id));
+      showToast("Prototype deleted");
     } catch {
-      alert("Failed to delete");
+      showToast("Failed to delete", "error");
     }
   };
 
@@ -692,7 +695,7 @@ const CreateApplication = () => {
               <button
                 onClick={() => {
                   if (mergeSelectedCount < 2) {
-                    alert("Check at least 2 prototypes to merge.");
+                    showToast("Check at least 2 prototypes to merge.", "error");
                     return;
                   }
                   setShowMergeDialog(true);
@@ -743,7 +746,7 @@ const CreateApplication = () => {
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button onClick={() => loadSaved(p)} style={smallBtnStyle("accent")}>Open</button>
                     {canDelete && (
-                      <button onClick={() => handleDeleteSaved(p._id)} style={smallBtnStyle("red")}>Delete</button>
+                      <ConfirmButton onConfirm={() => handleDeleteSaved(p._id)} label="Delete" />
                     )}
                   </div>
                 </div>

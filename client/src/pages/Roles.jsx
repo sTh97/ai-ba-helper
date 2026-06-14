@@ -1,45 +1,52 @@
 import { useState, useEffect } from "react";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/Toast";
+import PageHeader from "../components/PageHeader";
+import Badge from "../components/Badge";
+import EmptyState from "../components/EmptyState";
+import ConfirmButton from "../components/ConfirmButton";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
   background: "var(--bg-elevated)", border: "1px solid var(--border)",
   borderRadius: "var(--radius)", color: "var(--text-primary)",
   fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+  transition: "border-color 0.15s",
 };
 
+const focusOn = (e) => (e.target.style.borderColor = "var(--accent)");
+const focusOff = (e) => (e.target.style.borderColor = "var(--border)");
+
 const emptyPermission = (module) => ({
-  module,
-  create: false,
-  read: false,
-  update: false,
-  delete: false,
-  dataAccess: "own",
+  module, create: false, read: false, update: false, delete: false, dataAccess: "own",
 });
+
+const ShieldIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+);
+
+const countPerms = (perms = []) =>
+  perms.reduce((acc, p) => acc + ["create", "read", "update", "delete"].filter((a) => p[a]).length, 0);
 
 const Roles = () => {
   const { hasPermission } = useAuth();
+  const { showToast } = useToast();
   const [modules, setModules] = useState([]);
   const [roles, setRoles] = useState([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [permissions, setPermissions] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const canCreate = hasPermission("roles", "create");
   const canUpdate = hasPermission("roles", "update");
   const canDelete = hasPermission("roles", "delete");
 
-  const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 2800);
-  };
-
-  const initPermissions = (moduleList) =>
-    moduleList.map((m) => emptyPermission(m.key));
+  const initPermissions = (moduleList) => moduleList.map((m) => emptyPermission(m.key));
 
   const fetchData = async () => {
     try {
@@ -60,17 +67,11 @@ const Roles = () => {
   useEffect(() => { fetchData(); }, []);
 
   const togglePerm = (moduleKey, field) => {
-    setPermissions((prev) =>
-      prev.map((p) =>
-        p.module === moduleKey ? { ...p, [field]: !p[field] } : p
-      )
-    );
+    setPermissions((prev) => prev.map((p) => (p.module === moduleKey ? { ...p, [field]: !p[field] } : p)));
   };
 
   const setDataAccess = (moduleKey, value) => {
-    setPermissions((prev) =>
-      prev.map((p) => (p.module === moduleKey ? { ...p, dataAccess: value } : p))
-    );
+    setPermissions((prev) => prev.map((p) => (p.module === moduleKey ? { ...p, dataAccess: value } : p)));
   };
 
   const handleEdit = (role) => {
@@ -117,12 +118,7 @@ const Roles = () => {
     }
   };
 
-  const handleDelete = async (id, isSystem) => {
-    if (isSystem) {
-      showToast("System roles cannot be deleted", "error");
-      return;
-    }
-    if (!window.confirm("Delete this role?")) return;
+  const handleDelete = async (id) => {
     try {
       await axios.delete(`/roles/${id}`);
       showToast("Role deleted");
@@ -135,76 +131,62 @@ const Roles = () => {
 
   const moduleLabel = (key) => modules.find((m) => m.key === key)?.label || key;
 
-  return (
-    <div style={{ maxWidth: 960, margin: "0 auto" }}>
-      {toast && (
-        <div style={{
-          position: "fixed", top: 20, right: 20, zIndex: 999,
-          padding: "12px 20px", borderRadius: "var(--radius)",
-          background: toast.type === "error" ? "var(--red-soft)" : "var(--green-soft)",
-          border: `1px solid ${toast.type === "error" ? "var(--red)" : "var(--green)"}`,
-          color: toast.type === "error" ? "var(--red)" : "var(--green)",
-          fontSize: 13, fontWeight: 500,
-        }}>
-          {toast.type === "error" ? "✗ " : "✓ "}{toast.msg}
-        </div>
-      )}
+  const colHead = {
+    padding: "8px 12px", textAlign: "left", fontSize: 11,
+    color: "var(--text-muted)", textTransform: "uppercase",
+    letterSpacing: "0.6px", fontWeight: 600, borderBottom: "1px solid var(--border)",
+  };
 
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: "var(--text-primary)", margin: 0 }}>
-          Role Management
-        </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-          Define roles with module-level CRUD permissions and data access scope
-        </p>
-      </div>
+  return (
+    <div className="ba-page" style={{ maxWidth: 960, margin: "0 auto" }}>
+      <PageHeader
+        title="Role Management"
+        subtitle="Define roles with module-level CRUD permissions and data access scope"
+      />
 
       {(canCreate || (canUpdate && editingId)) && (
         <div style={{
           background: "var(--bg-surface)", border: "1px solid var(--border)",
           borderRadius: "var(--radius-lg)", padding: "22px 24px", marginBottom: 20,
         }}>
-          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 14, color: "var(--text-primary)", margin: "0 0 16px" }}>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 15, color: "var(--text-primary)", margin: "0 0 16px" }}>
             {editingId ? "Edit Role" : "Create Role"}
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-            <input style={inputStyle} placeholder="Role name *" value={name} onChange={(e) => setName(e.target.value)} />
-            <input style={inputStyle} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <input style={inputStyle} placeholder="Role name *" value={name} onChange={(e) => setName(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
+            <input style={inputStyle} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
           </div>
 
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ overflowX: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead>
                 <tr style={{ background: "var(--bg-elevated)" }}>
                   {["Module", "Create", "Read", "Update", "Delete", "Data Access"].map((h) => (
-                    <th key={h} style={{
-                      padding: "10px 12px", textAlign: "left", fontSize: 11,
-                      color: "var(--text-muted)", textTransform: "uppercase",
-                      letterSpacing: "0.6px", borderBottom: "1px solid var(--border)",
-                    }}>{h}</th>
+                    <th key={h} style={colHead}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {permissions.map((perm) => (
-                  <tr key={perm.module} style={{ borderBottom: "1px solid var(--border)" }}>
-                    <td style={{ padding: "10px 12px", color: "var(--text-primary)", fontWeight: 500 }}>
+                {permissions.map((perm, idx) => (
+                  <tr key={perm.module} style={{ borderBottom: "1px solid var(--border)", background: idx % 2 === 1 ? "var(--bg-elevated)" : "transparent" }}>
+                    <td style={{ padding: "9px 12px", color: "var(--text-primary)", fontWeight: 500 }}>
                       {moduleLabel(perm.module)}
                     </td>
                     {["create", "read", "update", "delete"].map((action) => (
-                      <td key={action} style={{ padding: "10px 12px" }}>
+                      <td key={action} style={{ padding: "9px 12px" }}>
                         <input
                           type="checkbox"
+                          className="ba-check"
                           checked={perm[action]}
                           onChange={() => togglePerm(perm.module, action)}
                         />
                       </td>
                     ))}
-                    <td style={{ padding: "10px 12px" }}>
+                    <td style={{ padding: "9px 12px" }}>
                       <select
                         value={perm.dataAccess}
                         onChange={(e) => setDataAccess(perm.module, e.target.value)}
-                        style={{ ...inputStyle, width: "auto", padding: "6px 10px", fontSize: 12 }}
+                        style={{ ...inputStyle, width: "auto", padding: "6px 10px", fontSize: 12, cursor: "pointer" }}
                       >
                         <option value="own">Own Data</option>
                         <option value="all">All Data</option>
@@ -242,73 +224,60 @@ const Roles = () => {
 
       <div style={{
         background: "var(--bg-surface)", border: "1px solid var(--border)",
-        borderRadius: "var(--radius-lg)", overflow: "hidden",
+        borderRadius: "var(--radius-lg)", padding: "18px 20px",
       }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
           <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>
             All Roles
-            <span style={{ marginLeft: 8, fontSize: 11, padding: "2px 8px", background: "var(--bg-elevated)", borderRadius: 99, color: "var(--text-muted)" }}>
-              {roles.length}
-            </span>
+          </span>
+          <span style={{ fontSize: 11, padding: "2px 8px", background: "var(--bg-elevated)", borderRadius: 99, color: "var(--text-muted)" }}>
+            {roles.length}
           </span>
         </div>
+
         {roles.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>
-            No roles found.
-          </div>
+          <EmptyState icon={<ShieldIcon />} message="No roles found" hint="Create a role above to define permissions." />
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "var(--bg-elevated)" }}>
-                {["Name", "Description", "Type", ""].map((h) => (
-                  <th key={h} style={{
-                    padding: "10px 16px", textAlign: "left", fontSize: 11,
-                    color: "var(--text-muted)", textTransform: "uppercase",
-                    letterSpacing: "0.7px", borderBottom: "1px solid var(--border)",
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {roles.map((role) => (
-                <tr key={role._id} style={{ borderBottom: "1px solid var(--border)" }}>
-                  <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
-                    {role.name}
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-secondary)" }}>
-                    {role.description || "—"}
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 12 }}>
-                    <span style={{
-                      padding: "2px 8px", borderRadius: 99, fontSize: 11,
-                      background: role.isSystem ? "var(--accent-soft)" : "var(--bg-elevated)",
-                      color: role.isSystem ? "var(--accent)" : "var(--text-muted)",
-                    }}>
-                      {role.isSystem ? "System" : "Custom"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      {canUpdate && !role.isSystem && (
-                        <button onClick={() => handleEdit(role)} style={{
-                          padding: "5px 12px", borderRadius: 6,
-                          background: "var(--accent-soft)", border: "1px solid var(--accent)22",
-                          color: "var(--accent)", fontSize: 12, fontWeight: 500,
-                        }}>Edit</button>
-                      )}
-                      {canDelete && !role.isSystem && (
-                        <button onClick={() => handleDelete(role._id, role.isSystem)} style={{
-                          padding: "5px 12px", borderRadius: 6,
-                          background: "var(--red-soft)", border: "1px solid var(--red)22",
-                          color: "var(--red)", fontSize: 12, fontWeight: 500,
-                        }}>Delete</button>
-                      )}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
+            {roles.map((role) => (
+              <div key={role._id} style={{
+                background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                borderRadius: "var(--radius)", padding: "14px 16px",
+                display: "flex", flexDirection: "column", gap: 10,
+              }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>
+                      {role.name}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                      {countPerms(role.permissions)} permissions
+                    </div>
+                  </div>
+                  <Badge color={role.isSystem ? "accent" : "purple"}>
+                    {role.isSystem ? "System" : "Custom"}
+                  </Badge>
+                </div>
+                {role.description && (
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}>
+                    {role.description}
+                  </div>
+                )}
+                {!role.isSystem && (canUpdate || canDelete) && (
+                  <div style={{ display: "flex", gap: 6, marginTop: "auto" }}>
+                    {canUpdate && (
+                      <button onClick={() => handleEdit(role)} style={{
+                        padding: "5px 12px", borderRadius: 6,
+                        background: "var(--accent-soft)", border: "1px solid var(--accent)22",
+                        color: "var(--accent)", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                      }}>Edit</button>
+                    )}
+                    {canDelete && <ConfirmButton onConfirm={() => handleDelete(role._id)} />}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
