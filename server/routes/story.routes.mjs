@@ -1,7 +1,4 @@
-// server/routes/story.routes.mjs
 import express from "express";
-const router = express.Router();
-
 import {
   createStory,
   getAllStories,
@@ -11,13 +8,18 @@ import {
   enhanceStoryWithAI,
   getStoriesByProjectName,
 } from "../controllers/story.controller.mjs";
+import { authenticate, authorize } from "../middleware/auth.middleware.mjs";
 
-router.post("/", createStory);
-router.get("/", getAllStories);
-router.get("/:id", getStoryById);
-router.put("/:id", updateStory);
-router.delete("/:id", deleteStory);
-router.post("/enhance", enhanceStoryWithAI);
-router.get("/search/by-project", getStoriesByProjectName);
+const router = express.Router();
+
+router.use(authenticate);
+
+router.post("/", authorize("stories", "create"), createStory);
+router.get("/", authorize("stories", "read"), getAllStories);
+router.get("/search/by-project", authorize("stories", "read"), getStoriesByProjectName);
+router.get("/:id", authorize("stories", "read"), getStoryById);
+router.put("/:id", authorize("stories", "update"), updateStory);
+router.delete("/:id", authorize("stories", "delete"), deleteStory);
+router.post("/enhance", authorize("stories", "update"), enhanceStoryWithAI);
 
 export default router;

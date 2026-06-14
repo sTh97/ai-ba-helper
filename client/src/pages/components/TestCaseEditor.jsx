@@ -1,153 +1,3 @@
-// import { useState } from "react";
-
-// const TestCaseEditor = ({
-//   aiResult,
-//   setAiResult,
-//   storyText,
-//   setStoryText,
-//   editingStoryId,
-//   setShowAIOutput,
-//   setEditingStoryId,
-//   fetchStories,
-//   handleAccept,
-//   handleDiscard
-// }) => {
-//   const updateList = (listName, index, value) => {
-//     const updated = [...aiResult[listName]];
-//     updated[index] = value;
-//     setAiResult({ ...aiResult, [listName]: updated });
-//   };
-
-//   const deleteItem = (listName, index) => {
-//     const updated = aiResult[listName].filter((_, i) => i !== index);
-//     setAiResult({ ...aiResult, [listName]: updated });
-//   };
-
-//   const addTestCase = (type) => {
-//     const key = type === "positive" ? "happyTests" : "negativeTests";
-//     const updated = [...aiResult[key], ""];
-//     setAiResult({ ...aiResult, [key]: updated });
-//   };
-
-//   return (
-//     <div className="bg-gray-100 border-l-4 border-blue-500 p-4 mt-6 rounded">
-//       <h3 className="text-lg font-semibold text-blue-700 mb-4">Enhance with AI</h3>
-
-//       <div className="mb-4">
-//         <label className="font-medium text-gray-700">Corrected Story:</label>
-//         <textarea
-//           className="w-full mt-1 p-2 border rounded"
-//           rows="3"
-//           value={aiResult.correctedText}
-//           onChange={(e) =>
-//             setAiResult({ ...aiResult, correctedText: e.target.value })
-//           }
-//         />
-//       </div>
-
-//       <div className="mb-6">
-//         <label className="font-medium text-gray-700">Acceptance Criteria:</label>
-//         {aiResult.acceptanceCriteria.map((item, index) => (
-//           <div key={index} className="flex gap-2 mb-2">
-//             <input
-//               className="flex-grow p-2 border rounded"
-//               value={item}
-//               onChange={(e) => updateList("acceptanceCriteria", index, e.target.value)}
-//             />
-//             <button
-//               onClick={() => deleteItem("acceptanceCriteria", index)}
-//               className="text-red-600 hover:text-red-800"
-//             >
-//               ❌
-//             </button>
-//           </div>
-//         ))}
-//         <button
-//           onClick={() => setAiResult({ ...aiResult, acceptanceCriteria: [...aiResult.acceptanceCriteria, ""] })}
-//           className="mt-1 text-sm text-blue-600 hover:underline"
-//         >
-//           ➕ Add Acceptance Criteria
-//         </button>
-//       </div>
-
-//       <div className="mb-6">
-//         <label className="font-medium text-gray-700">Test Cases:</label>
-//         <table className="w-full text-sm mt-2">
-//           <thead>
-//             <tr className="bg-gray-200">
-//               <th className="border px-2 py-1">S.No</th>
-//               <th className="border px-2 py-1 text-left">Test Case</th>
-//               <th className="border px-2 py-1">Type</th>
-//               <th className="border px-2 py-1">Actions</th>
-//             </tr>
-//           </thead>
-//          <tbody>
-//   {[...aiResult.happyTests || [], ...aiResult.negativeTests || []].map((test, index) => (
-//     <tr key={`${index}`}>
-//       <td className="border px-2 py-1text-center">{index + 1}</td>
-//       <td className="border px-2 py-1">
-//         <textarea
-//           className="w-full border px-2 py-1"
-//           value={test}
-//           onChange={(e) => {
-//             const key = index < aiResult.happyTests.length ? "happyTests" : "negativeTests";
-//             const idx = index < aiResult.happyTests.length ? index : index - aiResult.happyTests.length;
-//             updateList(key, idx, e.target.value);
-//           }}
-//         />
-//       </td>
-//       <td className={`border px-2 py-1 text-center ${index < aiResult.happyTests.length ? "text-green-600" : "text-red-600"}`}>
-//         {index < aiResult.happyTests.length ? "Positive" : "Negative"}
-//       </td>
-//       <td className="border px-2 py-1 text-center">
-//         <button
-//           onClick={() => {
-//             const key = index < aiResult.happyTests.length ? "happyTests" : "negativeTests";
-//             const idx = index < aiResult.happyTests.length ? index : index - aiResult.happyTests.length;
-//             deleteItem(key, idx);
-//           }}
-//           className="text-red-600"
-//         >
-//           ❌
-//         </button>
-//       </td>
-//     </tr>
-//   ))}
-// </tbody>
-
-//         </table>
-
-//         <div className="mt-2 flex gap-4">
-//           <button onClick={() => addTestCase("positive")} className="text-sm text-green-700 hover:underline">
-//             ➕ Add Positive Test
-//           </button>
-//           <button onClick={() => addTestCase("negative")} className="text-sm text-red-700 hover:underline">
-//             ➕ Add Negative Test
-//           </button>
-//         </div>
-//       </div>
-//       <div className="flex gap-3 mt-4">
-//   <button
-//     onClick={handleAccept}
-//     className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-//   >
-//     Accept
-//   </button>
-//   <button
-//     onClick={handleDiscard}
-//     className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-//   >
-//     Discard
-//   </button>
-// </div>
-
-//     </div>
-//   );
-// };
-
-// export default TestCaseEditor;
-
-
 import { useState } from "react";
 
 const inputStyle = {
@@ -159,7 +9,16 @@ const inputStyle = {
   boxSizing: "border-box",
 };
 
-const TestCaseEditor = ({ aiResult, setAiResult, handleAccept, handleDiscard }) => {
+const TestCaseEditor = ({
+  aiResult,
+  setAiResult,
+  handleAccept,
+  handleDiscard,
+  storyIndex,
+  title,
+  showActions = true,
+  acceptLabel = "Accept & Save",
+}) => {
   const updateList = (listName, index, value) => {
     const updated = [...aiResult[listName]];
     updated[index] = value;
@@ -173,13 +32,42 @@ const TestCaseEditor = ({ aiResult, setAiResult, handleAccept, handleDiscard }) 
 
   const addTestCase = (type) => {
     const key = type === "positive" ? "happyTests" : "negativeTests";
-    setAiResult({ ...aiResult, [key]: [...aiResult[key], ""] });
+    setAiResult({ ...aiResult, [key]: [...(aiResult[key] || []), ""] });
+  };
+
+  const updateSafeList = (listName, index, value) => {
+    const list = [...(aiResult[listName] || [])];
+    list[index] = value;
+    setAiResult({ ...aiResult, [listName]: list });
+  };
+
+  const removeSafeListItem = (listName, index) => {
+    setAiResult({ ...aiResult, [listName]: (aiResult[listName] || []).filter((_, i) => i !== index) });
+  };
+
+  const addSafeListItem = (listName) => {
+    setAiResult({ ...aiResult, [listName]: [...(aiResult[listName] || []), ""] });
+  };
+
+  const updateField = (index, key, value) => {
+    const list = (aiResult.fields || []).map((f, i) => (i === index ? { ...f, [key]: value } : f));
+    setAiResult({ ...aiResult, fields: list });
+  };
+
+  const addField = () => {
+    setAiResult({ ...aiResult, fields: [...(aiResult.fields || []), { name: "", type: "text", description: "" }] });
+  };
+
+  const removeField = (index) => {
+    setAiResult({ ...aiResult, fields: (aiResult.fields || []).filter((_, i) => i !== index) });
   };
 
   const allTests = [
     ...(aiResult.happyTests || []).map((t, i) => ({ text: t, type: "positive", key: "happyTests", idx: i })),
     ...(aiResult.negativeTests || []).map((t, i) => ({ text: t, type: "negative", key: "negativeTests", idx: i })),
   ];
+
+  const displayTitle = title || (storyIndex != null ? `User Story ${storyIndex + 1}` : "AI Enhanced Output");
 
   return (
     <div style={{
@@ -194,7 +82,7 @@ const TestCaseEditor = ({ aiResult, setAiResult, handleAccept, handleDiscard }) 
       }}>
         <span style={{ fontSize: 14 }}>✨</span>
         <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
-          AI Enhanced Output
+          {displayTitle}
         </span>
         <span style={{
           marginLeft: "auto", fontSize: 11, padding: "2px 8px",
@@ -203,21 +91,30 @@ const TestCaseEditor = ({ aiResult, setAiResult, handleAccept, handleDiscard }) 
       </div>
 
       <div style={{ padding: "20px" }}>
-        {/* Corrected Story */}
-        <Section title="Corrected Story" icon="📝">
-          <textarea
-            style={{ ...inputStyle, minHeight: 80 }}
-            value={aiResult.correctedText}
-            onChange={e => setAiResult({ ...aiResult, correctedText: e.target.value })}
-            onFocus={e => (e.target.style.borderColor = "var(--accent)")}
-            onBlur={e => (e.target.style.borderColor = "var(--border)")}
+        <Section title="Feature" icon="🏷️">
+          <input
+            style={inputStyle}
+            placeholder="Feature / module this story belongs to (e.g. Leave Management)"
+            value={aiResult.feature || ""}
+            onChange={(e) => setAiResult({ ...aiResult, feature: e.target.value })}
+            onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+            onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
           />
         </Section>
 
-        {/* Acceptance Criteria */}
+        <Section title="User Story" icon="📝">
+          <textarea
+            style={{ ...inputStyle, minHeight: 80 }}
+            value={aiResult.correctedText}
+            onChange={(e) => setAiResult({ ...aiResult, correctedText: e.target.value })}
+            onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+            onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+          />
+        </Section>
+
         <Section title="Acceptance Criteria" icon="✅">
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {aiResult.acceptanceCriteria.map((item, index) => (
+            {(aiResult.acceptanceCriteria || []).map((item, index) => (
               <div key={index} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
                 <span style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 9, flexShrink: 0, minWidth: 20, textAlign: "right" }}>
                   {index + 1}.
@@ -225,9 +122,9 @@ const TestCaseEditor = ({ aiResult, setAiResult, handleAccept, handleDiscard }) 
                 <input
                   style={{ ...inputStyle, flex: 1 }}
                   value={item}
-                  onChange={e => updateList("acceptanceCriteria", index, e.target.value)}
-                  onFocus={e => (e.target.style.borderColor = "var(--accent)")}
-                  onBlur={e => (e.target.style.borderColor = "var(--border)")}
+                  onChange={(e) => updateList("acceptanceCriteria", index, e.target.value)}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
                 />
                 <button
                   onClick={() => deleteItem("acceptanceCriteria", index)}
@@ -236,7 +133,7 @@ const TestCaseEditor = ({ aiResult, setAiResult, handleAccept, handleDiscard }) 
               </div>
             ))}
             <button
-              onClick={() => setAiResult({ ...aiResult, acceptanceCriteria: [...aiResult.acceptanceCriteria, ""] })}
+              onClick={() => setAiResult({ ...aiResult, acceptanceCriteria: [...(aiResult.acceptanceCriteria || []), ""] })}
               style={{
                 marginTop: 4, padding: "7px 12px", borderRadius: 7,
                 background: "var(--accent-soft)", border: "1px dashed var(--accent)44",
@@ -247,10 +144,9 @@ const TestCaseEditor = ({ aiResult, setAiResult, handleAccept, handleDiscard }) 
           </div>
         </Section>
 
-        {/* Test Cases */}
         <Section title="Test Cases" icon="🧪">
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {allTests.map((tc, index) => (
+            {allTests.map((tc) => (
               <div key={`${tc.key}-${tc.idx}`} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
                 <span style={{
                   marginTop: 8, fontSize: 10, fontWeight: 600, padding: "3px 7px",
@@ -263,9 +159,9 @@ const TestCaseEditor = ({ aiResult, setAiResult, handleAccept, handleDiscard }) 
                 <textarea
                   style={{ ...inputStyle, flex: 1, minHeight: 40 }}
                   value={tc.text}
-                  onChange={e => updateList(tc.key, tc.idx, e.target.value)}
-                  onFocus={e => (e.target.style.borderColor = tc.type === "positive" ? "var(--green)" : "var(--red)")}
-                  onBlur={e => (e.target.style.borderColor = "var(--border)")}
+                  onChange={(e) => updateList(tc.key, tc.idx, e.target.value)}
+                  onFocus={(e) => (e.target.style.borderColor = tc.type === "positive" ? "var(--green)" : "var(--red)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
                 />
                 <button
                   onClick={() => deleteItem(tc.key, tc.idx)}
@@ -294,29 +190,211 @@ const TestCaseEditor = ({ aiResult, setAiResult, handleAccept, handleDiscard }) 
           </div>
         </Section>
 
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 8, paddingTop: 8 }}>
-          <button
-            onClick={handleAccept}
-            style={{
-              padding: "9px 22px", borderRadius: "var(--radius)",
-              background: "var(--green)", border: "none", color: "#0a0b0f",
-              fontWeight: 700, fontSize: 13, cursor: "pointer",
-            }}
-          >Accept & Save</button>
-          <button
-            onClick={handleDiscard}
-            style={{
-              padding: "9px 16px", borderRadius: "var(--radius)",
-              background: "var(--bg-elevated)", border: "1px solid var(--border)",
-              color: "var(--text-secondary)", fontWeight: 500, fontSize: 13, cursor: "pointer",
-            }}
-          >Discard</button>
-        </div>
+        <Section title="Field Level Description" icon="🗂️">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {(aiResult.fields || []).length > 0 && (
+              <div style={{ display: "flex", gap: 6, padding: "0 2px" }}>
+                <span style={{ flex: "0 0 30%", fontSize: 10, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>Field</span>
+                <span style={{ flex: "0 0 22%", fontSize: 10, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>Type</span>
+                <span style={{ flex: 1, fontSize: 10, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>Description</span>
+                <span style={{ width: 22 }} />
+              </div>
+            )}
+            {(aiResult.fields || []).map((field, index) => (
+              <div key={index} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+                <input
+                  style={{ ...inputStyle, flex: "0 0 30%" }}
+                  placeholder="Field name"
+                  value={field.name || ""}
+                  onChange={(e) => updateField(index, "name", e.target.value)}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+                />
+                <input
+                  style={{ ...inputStyle, flex: "0 0 22%" }}
+                  placeholder="type"
+                  list="field-type-options"
+                  value={field.type || ""}
+                  onChange={(e) => updateField(index, "type", e.target.value)}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+                />
+                <input
+                  style={{ ...inputStyle, flex: 1 }}
+                  placeholder="Description"
+                  value={field.description || ""}
+                  onChange={(e) => updateField(index, "description", e.target.value)}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+                />
+                <button
+                  onClick={() => removeField(index)}
+                  style={{ marginTop: 6, background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14, padding: "2px 4px", flexShrink: 0 }}
+                >✕</button>
+              </div>
+            ))}
+            <datalist id="field-type-options">
+              {["text", "email", "number", "date", "datetime", "dropdown", "checkbox", "radio", "textarea", "file", "currency", "boolean", "phone", "url", "password"].map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
+            <button
+              onClick={addField}
+              style={{
+                marginTop: 4, padding: "7px 12px", borderRadius: 7,
+                background: "var(--accent-soft)", border: "1px dashed var(--accent)44",
+                color: "var(--accent)", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                alignSelf: "flex-start",
+              }}
+            >+ Add Field</button>
+          </div>
+        </Section>
+
+        <Section title="Business Rules" icon="📐">
+          <ListEditor
+            items={aiResult.businessRules}
+            onChange={(i, v) => updateSafeList("businessRules", i, v)}
+            onRemove={(i) => removeSafeListItem("businessRules", i)}
+            onAdd={() => addSafeListItem("businessRules")}
+            addLabel="+ Add Business Rule"
+            placeholder="e.g. A user can only have one active leave request at a time"
+          />
+        </Section>
+
+        <Section title="Validation" icon="🔎">
+          <ListEditor
+            items={aiResult.validations}
+            onChange={(i, v) => updateSafeList("validations", i, v)}
+            onRemove={(i) => removeSafeListItem("validations", i)}
+            onAdd={() => addSafeListItem("validations")}
+            addLabel="+ Add Validation"
+            placeholder="e.g. Email must be a valid format and is required"
+          />
+        </Section>
+
+        <Section title="Edge Cases" icon="⚠️">
+          <ListEditor
+            items={aiResult.edgeCases}
+            onChange={(i, v) => updateSafeList("edgeCases", i, v)}
+            onRemove={(i) => removeSafeListItem("edgeCases", i)}
+            onAdd={() => addSafeListItem("edgeCases")}
+            addLabel="+ Add Edge Case"
+            placeholder="e.g. Request spanning two calendar years"
+          />
+        </Section>
+
+        <Section title="Constraints" icon="⛓️">
+          <ListEditor
+            items={aiResult.constraints}
+            onChange={(i, v) => updateSafeList("constraints", i, v)}
+            onRemove={(i) => removeSafeListItem("constraints", i)}
+            onAdd={() => addSafeListItem("constraints")}
+            addLabel="+ Add Constraint"
+            placeholder="e.g. Must comply with regional labor regulations"
+          />
+        </Section>
+
+        <Section title="Dependencies" icon="🔗">
+          <ListEditor
+            items={aiResult.dependencies}
+            onChange={(i, v) => updateSafeList("dependencies", i, v)}
+            onRemove={(i) => removeSafeListItem("dependencies", i)}
+            onAdd={() => addSafeListItem("dependencies")}
+            addLabel="+ Add Dependency"
+            placeholder="e.g. Depends on the Authentication service / Story #12"
+          />
+        </Section>
+
+        <Section title="Business Impact" icon="📈">
+          <textarea
+            style={{ ...inputStyle, minHeight: 64 }}
+            placeholder="Describe the business value / impact of this story…"
+            value={aiResult.businessImpact || ""}
+            onChange={(e) => setAiResult({ ...aiResult, businessImpact: e.target.value })}
+            onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+            onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+          />
+        </Section>
+
+        <Section title="Definition of Ready (DoR)" icon="🟢">
+          <ListEditor
+            items={aiResult.definitionOfReady}
+            onChange={(i, v) => updateSafeList("definitionOfReady", i, v)}
+            onRemove={(i) => removeSafeListItem("definitionOfReady", i)}
+            onAdd={() => addSafeListItem("definitionOfReady")}
+            addLabel="+ Add DoR Item"
+            placeholder="e.g. Acceptance criteria reviewed and approved by PO"
+          />
+        </Section>
+
+        <Section title="Definition of Done (DoD)" icon="🏁">
+          <ListEditor
+            items={aiResult.definitionOfDone}
+            onChange={(i, v) => updateSafeList("definitionOfDone", i, v)}
+            onRemove={(i) => removeSafeListItem("definitionOfDone", i)}
+            onAdd={() => addSafeListItem("definitionOfDone")}
+            addLabel="+ Add DoD Item"
+            placeholder="e.g. Code merged, tests passing, and deployed to staging"
+          />
+        </Section>
+
+        {showActions && (
+          <div style={{ display: "flex", gap: 8, paddingTop: 8 }}>
+            <button
+              onClick={handleAccept}
+              style={{
+                padding: "9px 22px", borderRadius: "var(--radius)",
+                background: "var(--green)", border: "none", color: "#0a0b0f",
+                fontWeight: 700, fontSize: 13, cursor: "pointer",
+              }}
+            >{acceptLabel}</button>
+            <button
+              onClick={handleDiscard}
+              style={{
+                padding: "9px 16px", borderRadius: "var(--radius)",
+                background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                color: "var(--text-secondary)", fontWeight: 500, fontSize: 13, cursor: "pointer",
+              }}
+            >Discard</button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+const ListEditor = ({ items, onChange, onRemove, onAdd, addLabel, placeholder }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    {(items || []).map((item, index) => (
+      <div key={index} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+        <span style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 9, flexShrink: 0, minWidth: 20, textAlign: "right" }}>
+          {index + 1}.
+        </span>
+        <textarea
+          style={{ ...inputStyle, flex: 1, minHeight: 38 }}
+          value={item}
+          placeholder={placeholder}
+          onChange={(e) => onChange(index, e.target.value)}
+          onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+          onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+        />
+        <button
+          onClick={() => onRemove(index)}
+          style={{ marginTop: 8, background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14, padding: "2px 4px", flexShrink: 0 }}
+        >✕</button>
+      </div>
+    ))}
+    <button
+      onClick={onAdd}
+      style={{
+        marginTop: 4, padding: "7px 12px", borderRadius: 7,
+        background: "var(--accent-soft)", border: "1px dashed var(--accent)44",
+        color: "var(--accent)", fontSize: 12, fontWeight: 500, cursor: "pointer",
+        alignSelf: "flex-start",
+      }}
+    >{addLabel}</button>
+  </div>
+);
 
 const Section = ({ title, icon, children }) => (
   <div style={{ marginBottom: 20 }}>

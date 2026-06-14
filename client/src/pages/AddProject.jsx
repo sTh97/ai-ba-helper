@@ -169,6 +169,9 @@
 
 import { useState, useEffect } from "react";
 import axios from "../api/axiosInstance";
+import { useAuth } from "../context/AuthContext";
+import Pagination from "../components/Pagination";
+import { getPageSlice, getTotalPages } from "../utils/pagination";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -180,11 +183,17 @@ const inputStyle = {
 };
 
 const AddProject = () => {
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission("projects", "create");
+  const canUpdate = hasPermission("projects", "update");
+  const canDelete = hasPermission("projects", "delete");
   const [projects, setProjects] = useState([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -203,6 +212,8 @@ const AddProject = () => {
   };
 
   useEffect(() => { fetchProjects(); }, []);
+
+  useEffect(() => { setPage(1); }, [search, pageSize]);
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
@@ -232,7 +243,7 @@ const AddProject = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this project?")) return;
     try {
-      await axios.delete(`/api/projects/${id}`);
+      await axios.delete(`/projects/${id}`);
       showToast("Project deleted");
       fetchProjects();
     } catch {
@@ -243,6 +254,10 @@ const AddProject = () => {
   const filteredProjects = projects.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalPages = getTotalPages(filteredProjects.length, pageSize);
+  const safePage = Math.min(page, totalPages);
+  const paginatedProjects = getPageSlice(filteredProjects, safePage, pageSize);
 
   return (
     <div style={{ maxWidth: 880, margin: "0 auto" }}>
@@ -271,7 +286,7 @@ const AddProject = () => {
       </div>
 
       {/* Form Card */}
-      <div style={{
+      {(canCreate || (canUpdate && editingId)) && <div style={{
         background: "var(--bg-surface)", border: "1px solid var(--border)",
         borderRadius: "var(--radius-lg)", padding: "22px 24px", marginBottom: 20,
       }}>
@@ -324,7 +339,7 @@ const AddProject = () => {
             )}
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Project List */}
       <div style={{
@@ -358,61 +373,74 @@ const AddProject = () => {
             {search ? "No projects match your search." : "No projects yet. Create your first one above."}
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "var(--bg-elevated)" }}>
-                {["#", "Name", "Description", "Created", ""].map(h => (
-                  <th key={h} style={{
-                    padding: "10px 16px", textAlign: "left",
-                    fontSize: 11, color: "var(--text-muted)",
-                    textTransform: "uppercase", letterSpacing: "0.7px",
-                    fontWeight: 500, borderBottom: "1px solid var(--border)",
-                    whiteSpace: "nowrap",
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProjects.map((project, index) => (
-                <tr key={project._id} style={{ borderBottom: "1px solid var(--border)" }}>
-                  <td style={{ padding: "12px 16px", color: "var(--text-muted)", fontSize: 12, width: 40 }}>
-                    {index + 1}
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
-                    {project.name}
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-secondary)", maxWidth: 260 }}>
-                    <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {project.description || <span style={{ color: "var(--text-muted)" }}>—</span>}
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                    {new Date(project.createdAt).toLocaleDateString()}
-                  </td>
-                  <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button
-                        onClick={() => handleEdit(project)}
-                        style={{
-                          padding: "5px 12px", borderRadius: 6,
-                          background: "var(--accent-soft)", border: "1px solid var(--accent)22",
-                          color: "var(--accent)", fontSize: 12, fontWeight: 500,
-                        }}
-                      >Edit</button>
-                      <button
-                        onClick={() => handleDelete(project._id)}
-                        style={{
-                          padding: "5px 12px", borderRadius: 6,
-                          background: "var(--red-soft)", border: "1px solid var(--red)22",
-                          color: "var(--red)", fontSize: 12, fontWeight: 500,
-                        }}
-                      >Delete</button>
-                    </div>
-                  </td>
+          <>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "var(--bg-elevated)" }}>
+                  {["#", "Name", "Description", "Created", ""].map(h => (
+                    <th key={h} style={{
+                      padding: "10px 16px", textAlign: "left",
+                      fontSize: 11, color: "var(--text-muted)",
+                      textTransform: "uppercase", letterSpacing: "0.7px",
+                      fontWeight: 500, borderBottom: "1px solid var(--border)",
+                      whiteSpace: "nowrap",
+                    }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {paginatedProjects.map((project, index) => (
+                  <tr key={project._id} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: "12px 16px", color: "var(--text-muted)", fontSize: 12, width: 40 }}>
+                      {(safePage - 1) * pageSize + index + 1}
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
+                      {project.name}
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-secondary)", maxWidth: 260 }}>
+                      <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {project.description || <span style={{ color: "var(--text-muted)" }}>—</span>}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                      {new Date(project.createdAt).toLocaleDateString()}
+                    </td>
+                    <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {canUpdate && (
+                          <button
+                            onClick={() => handleEdit(project)}
+                            style={{
+                              padding: "5px 12px", borderRadius: 6,
+                              background: "var(--accent-soft)", border: "1px solid var(--accent)22",
+                              color: "var(--accent)", fontSize: 12, fontWeight: 500,
+                            }}
+                          >Edit</button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDelete(project._id)}
+                            style={{
+                              padding: "5px 12px", borderRadius: 6,
+                              background: "var(--red-soft)", border: "1px solid var(--red)22",
+                              color: "var(--red)", fontSize: 12, fontWeight: 500,
+                            }}
+                          >Delete</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              totalItems={filteredProjects.length}
+              page={safePage}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
         )}
       </div>
     </div>
