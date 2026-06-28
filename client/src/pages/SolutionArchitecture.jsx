@@ -1,9 +1,23 @@
 import { useState, useEffect, useMemo } from "react";
+import {
+  Check,
+  ClipboardList,
+  Database,
+  Download,
+  GitBranch,
+  Layers,
+  Link2,
+  Puzzle,
+  ShieldCheck,
+  Sparkles,
+  Sparkle,
+} from "lucide-react";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
 import PageHeader from "../components/PageHeader";
 import ConfirmButton from "../components/ConfirmButton";
+import Button from "../components/Button";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -397,19 +411,16 @@ const SolutionArchitecture = () => {
             )}
 
             {canCreate && stories.length > 0 && (
-              <button
+              <Button
                 onClick={openDialog}
                 disabled={generating || selectedCount === 0}
-                style={{
-                  padding: "10px 22px", borderRadius: "var(--radius)", border: "none",
-                  background: (generating || selectedCount === 0) ? "var(--bg-elevated)" : "var(--accent)",
-                  color: (generating || selectedCount === 0) ? "var(--text-muted)" : "white",
-                  fontWeight: 600, fontSize: 13,
-                  cursor: generating ? "wait" : selectedCount === 0 ? "not-allowed" : "pointer",
-                }}
+                icon={Sparkles}
+                iconSize={14}
               >
-                {generating ? "Designing architecture… (may take 1-2 min)" : `✨ Generate Architecture (${selectedCount} ${selectedCount === 1 ? "story" : "stories"})`}
-              </button>
+                {generating
+                  ? "Designing architecture… (may take 1-2 min)"
+                  : `Generate architecture (${selectedCount} ${selectedCount === 1 ? "story" : "stories"})`}
+              </Button>
             )}
 
             {selectedProjectId && stories.length === 0 && (
@@ -475,7 +486,7 @@ const SolutionArchitecture = () => {
             position: "absolute", top: 14, right: 16,
             display: "inline-flex", alignItems: "center", gap: 4,
             fontSize: 11, fontWeight: 600, color: "var(--ai-accent)", letterSpacing: "0.3px",
-          }}><span aria-hidden>✦</span> AI Generated</span>
+          }}><Sparkle size={11} strokeWidth={1.75} aria-hidden /> AI Generated</span>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap", paddingTop: 8 }}>
             <div style={{ flex: 1, minWidth: 220 }}>
               <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -500,13 +511,16 @@ const SolutionArchitecture = () => {
                     style={dialogBtnStyle("yellow", Boolean(downloading))}
                     title={f.hint}
                   >
-                    {downloading.startsWith(f.value) ? "Preparing…" : `⬇ ${f.label}`}
+                    <span className="inline-flex items-center gap-1">
+                      {downloading.startsWith(f.value) ? "Preparing…" : <><Download size={14} strokeWidth={1.75} /> {f.label}</>}
+                    </span>
                   </button>
                 ))}
               </div>
               {canCreate && (
-                <button onClick={openRegenerate} style={dialogBtnStyle("accentSoft")}>
-                  ✨ Edit & Regenerate
+                <button onClick={openRegenerate} style={dialogBtnStyle("accentSoft")} className="inline-flex items-center gap-1.5">
+                  <Sparkles size={14} strokeWidth={1.75} aria-hidden />
+                  Edit & regenerate
                 </button>
               )}
               {(canCreate || (canUpdate && generated._id)) && (
@@ -562,14 +576,14 @@ const ArchitectureView = ({ content }) => {
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
       {summary && (
         <div>
-          <SectionTitle icon="📋">Executive Summary</SectionTitle>
+          <SectionTitle icon={ClipboardList}>Executive Summary</SectionTitle>
           <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>{summary}</p>
         </div>
       )}
 
       {techStack.length > 0 && (
         <div>
-          <SectionTitle icon="🧱">Technology Stack</SectionTitle>
+          <SectionTitle icon={Layers}>Technology Stack</SectionTitle>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {techStack.map((t, i) => (
               <div key={i} style={cardStyle}>
@@ -593,7 +607,7 @@ const ArchitectureView = ({ content }) => {
 
       {(technicalViability.assessment || technicalViability.rating || (technicalViability.risks || []).length > 0) && (
         <div>
-          <SectionTitle icon="✅">Technical Viability</SectionTitle>
+          <SectionTitle icon={ShieldCheck}>Technical Viability</SectionTitle>
           {technicalViability.rating && (
             <span style={{
               display: "inline-block", marginBottom: 10, fontSize: 11, fontWeight: 700, padding: "3px 10px",
@@ -620,7 +634,7 @@ const ArchitectureView = ({ content }) => {
 
       {featureLinkages.length > 0 && (
         <div>
-          <SectionTitle icon="🔗">Feature Linkage</SectionTitle>
+          <SectionTitle icon={Link2}>Feature Linkage</SectionTitle>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {featureLinkages.map((f, i) => (
               <div key={i} style={cardStyle}>
@@ -642,7 +656,7 @@ const ArchitectureView = ({ content }) => {
 
       {schemas.length > 0 && (
         <div>
-          <SectionTitle icon="🗄️">Data Schemas</SectionTitle>
+          <SectionTitle icon={Database}>Data Schemas</SectionTitle>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {schemas.map((sch, i) => (
               <div key={i} style={cardStyle}>
@@ -650,7 +664,7 @@ const ArchitectureView = ({ content }) => {
                 {sch.description && <div style={{ fontSize: 12, color: "var(--text-muted)", margin: "2px 0 8px" }}>{sch.description}</div>}
                 {(sch.fields || []).length > 0 && (
                   <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <table className="ba-table">
                       <thead>
                         <tr>
                           <Th>Field</Th><Th>Type</Th><Th>Description</Th>
@@ -676,7 +690,7 @@ const ArchitectureView = ({ content }) => {
 
       {(erd.mermaid || (erd.entities || []).length > 0) && (
         <div>
-          <SectionTitle icon="🧩">Entity Relationship Diagram (ERD)</SectionTitle>
+          <SectionTitle icon={Puzzle}>Entity Relationship Diagram (ERD)</SectionTitle>
           {erd.mermaid
             ? <MermaidDiagram code={erd.mermaid} height={420} />
             : <ErdFallback erd={erd} />}
@@ -697,7 +711,7 @@ const ArchitectureView = ({ content }) => {
 
       {(workflow.mermaid || (workflow.steps || []).length > 0) && (
         <div>
-          <SectionTitle icon="🔀">Project Workflow</SectionTitle>
+          <SectionTitle icon={GitBranch}>Project Workflow</SectionTitle>
           {workflow.description && (
             <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 10px" }}>{workflow.description}</p>
           )}
@@ -791,7 +805,9 @@ const MermaidDiagram = ({ code, height = 400 }) => {
           {showSource ? "Hide source" : "View Mermaid source"}
         </button>
         {showSource && (
-          <button onClick={copy} style={smallBtnStyle("accent")}>{copied ? "✓ Copied" : "Copy"}</button>
+          <button onClick={copy} style={smallBtnStyle("accent")} className="inline-flex items-center gap-1.5">
+            {copied ? <><Check size={14} strokeWidth={1.75} /> Copied</> : "Copy"}
+          </button>
         )}
       </div>
       {showSource && (
@@ -895,8 +911,9 @@ const SolutionBriefDialog = ({
           onClick={onRefine}
           disabled={refining || generating || !vision.trim()}
           style={dialogBtnStyle("yellow", refining || generating || !vision.trim())}
+          className="inline-flex items-center gap-1.5"
         >
-          {refining ? "Refining…" : "✨ Refine with AI"}
+          {refining ? "Refining…" : <><Sparkles size={14} strokeWidth={1.75} aria-hidden /> Refine with AI</>}
         </button>
         <button
           type="button"
@@ -913,9 +930,9 @@ const SolutionBriefDialog = ({
 
 /* ---------------- Small presentational helpers ---------------- */
 
-const SectionTitle = ({ icon, children }) => (
+const SectionTitle = ({ icon: Icon, children }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-    <span style={{ fontSize: 15 }}>{icon}</span>
+    {Icon && <Icon size={18} strokeWidth={1.75} style={{ color: "var(--text-secondary)" }} />}
     <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>{children}</span>
   </div>
 );
@@ -942,12 +959,8 @@ const BulletList = ({ title, items, tone }) => (
   </div>
 );
 
-const Th = ({ children }) => (
-  <th style={{ textAlign: "left", padding: "6px 10px", borderBottom: "1px solid var(--border)", color: "var(--text-muted)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.4px" }}>{children}</th>
-);
-const Td = ({ children, style }) => (
-  <td style={{ padding: "6px 10px", borderBottom: "1px solid var(--border)", verticalAlign: "top", ...style }}>{children}</td>
-);
+const Th = ({ children }) => <th>{children}</th>;
+const Td = ({ children, style }) => <td style={style}>{children}</td>;
 
 const ratingStyle = (rating) => {
   const r = String(rating).toLowerCase();

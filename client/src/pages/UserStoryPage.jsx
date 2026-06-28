@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Sparkle as SparkleIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "../api/axiosInstance";
 import { useToast } from "../components/Toast";
@@ -17,11 +18,9 @@ const inputStyle = {
 const focusOn = (e) => (e.target.style.borderColor = "var(--accent)");
 const focusOff = (e) => (e.target.style.borderColor = "var(--border)");
 
-const Sparkle = ({ spinning }) => (
+const AiSparkleSpinner = ({ spinning }) => (
   <span className={`ba-sparkle${spinning ? " spinning" : ""}`} aria-hidden>
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2c.5 4.5 3 7 7.5 7.5-4.5.5-7 3-7.5 7.5-.5-4.5-3-7-7.5-7.5C9 9 11.5 6.5 12 2z" />
-    </svg>
+    <SparkleIcon size={14} strokeWidth={1.75} />
   </span>
 );
 
@@ -32,8 +31,7 @@ const AIEnhanceButton = ({ loading, disabled, onClick }) => (
     style={{
       alignSelf: "flex-start", padding: "10px 20px",
       borderRadius: "var(--radius)",
-      border: "1px solid transparent",
-      borderImage: "linear-gradient(135deg, #4f8ef7, #38b2b2) 1",
+      border: "1px solid var(--ai-border)",
       background: "var(--bg-elevated)",
       color: "var(--text-primary)",
       fontWeight: 600, fontSize: 13,
@@ -43,7 +41,7 @@ const AIEnhanceButton = ({ loading, disabled, onClick }) => (
     }}
   >
     <span style={{ color: "var(--ai-accent)", display: "flex" }}>
-      <Sparkle spinning={loading} />
+      <AiSparkleSpinner spinning={loading} />
     </span>
     {loading ? (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -327,7 +325,7 @@ const UserStoryPage = () => {
           display: "inline-flex", alignItems: "center", gap: 6,
           fontSize: 11, fontWeight: 700, color: "var(--ai-accent)", letterSpacing: "0.4px", textTransform: "uppercase",
         }}>
-          <span aria-hidden>✦</span> AI Generated
+          <SparkleIcon size={11} strokeWidth={1.75} aria-hidden /> AI Generated
         </span>
         {!isEditMode && (
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>

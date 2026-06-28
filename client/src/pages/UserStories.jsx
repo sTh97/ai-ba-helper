@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Sparkle, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
@@ -201,7 +202,9 @@ const UserStories = () => {
                 <span style={{
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
                   width: 14, height: 14, borderRadius: 99, background: "var(--accent)22", fontSize: 10,
-                }}>✕</span>
+                }}>
+                  <X size={12} strokeWidth={1.75} />
+                </span>
               </button>
             ))}
             <button
@@ -339,7 +342,13 @@ const StoryCard = ({ story, isLast, expanded, onToggle, onEdit, onDelete }) => {
           <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
             <Chip color={acCount ? "var(--text-secondary)" : "var(--text-muted)"}>{acCount} criteria</Chip>
             <Chip color={testCount ? "var(--text-secondary)" : "var(--text-muted)"}>{testCount} tests</Chip>
-            {hasWireframe && <Chip color="var(--ai-accent)">✦ wireframe</Chip>}
+            {hasWireframe && (
+              <Chip color="var(--ai-accent)">
+                <span className="inline-flex items-center gap-1">
+                  <Sparkle size={11} strokeWidth={1.75} aria-hidden /> wireframe
+                </span>
+              </Chip>
+            )}
           </div>
         </div>
 

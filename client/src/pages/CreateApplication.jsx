@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Check, Circle, CircleDot, LayoutGrid, Minus, Sparkles, X } from "lucide-react";
 import axios, { pollWithTimeout } from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
 import ConfirmButton from "../components/ConfirmButton";
+import Button from "../components/Button";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -645,21 +647,16 @@ const CreateApplication = () => {
 
             {canCreate && stories.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-                <button
+                <Button
                   onClick={openBriefDialog}
                   disabled={generating || merging || selectedCount === 0}
-                  style={{
-                    padding: "10px 22px", borderRadius: "var(--radius)", border: "none",
-                    background: (generating || selectedCount === 0) ? "var(--bg-elevated)" : "var(--accent)",
-                    color: (generating || selectedCount === 0) ? "var(--text-muted)" : "white",
-                    fontWeight: 600, fontSize: 13,
-                    cursor: generating ? "wait" : selectedCount === 0 ? "not-allowed" : "pointer",
-                  }}
+                  icon={Sparkles}
+                  iconSize={14}
                 >
                   {generating
                     ? (jobProgress?.message || `Building prototype… (${jobProgress?.percent || 0}%)`)
-                    : `✨ Generate Prototype (${selectedCount} ${selectedCount === 1 ? "story" : "stories"})`}
-                </button>
+                    : `Generate prototype (${selectedCount} ${selectedCount === 1 ? "story" : "stories"})`}
+                </Button>
                 {prototypePrompt.trim() && !generating && (
                   <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                     Brief ready{promptRefined ? " (refined)" : ""} — click to edit before generating
@@ -913,8 +910,9 @@ const CreateApplication = () => {
                 background: "var(--bg-elevated)",
                 display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
               }}>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
-                  🧩 Interactive Prototype Preview
+                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: "var(--text-primary)", display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <LayoutGrid size={18} strokeWidth={1.75} />
+                  Interactive prototype preview
                 </span>
                 {canCreate && (
                   <button
@@ -927,8 +925,9 @@ const CreateApplication = () => {
                       color: updating ? "var(--text-muted)" : "white",
                       fontSize: 12, fontWeight: 600, cursor: updating ? "wait" : "pointer",
                     }}
+                    className="inline-flex items-center gap-1.5"
                   >
-                    {updating ? "Updating…" : "✨ Update with AI"}
+                    {updating ? "Updating…" : <><Sparkles size={14} strokeWidth={1.75} aria-hidden /> Update with AI</>}
                   </button>
                 )}
               </div>
@@ -1012,8 +1011,9 @@ const CreateApplication = () => {
                         color: copied ? "var(--green)" : "var(--text-secondary)",
                         fontSize: 11, fontWeight: 500, cursor: "pointer",
                       }}
+                      className="inline-flex items-center gap-1.5"
                     >
-                      {copied ? "✓ Copied" : "Copy"}
+                      {copied ? <><Check size={14} strokeWidth={1.75} /> Copied</> : "Copy"}
                     </button>
                   </div>
                 )}
@@ -1188,8 +1188,9 @@ const PrototypeBriefDialog = ({
           onClick={onRefine}
           disabled={refiningPrompt || !prototypePrompt.trim()}
           style={dialogBtnStyle("yellow", refiningPrompt || !prototypePrompt.trim())}
+          className="inline-flex items-center gap-1.5"
         >
-          {refiningPrompt ? "Refining…" : "✨ Refine with AI"}
+          {refiningPrompt ? "Refining…" : <><Sparkles size={14} strokeWidth={1.75} aria-hidden /> Refine with AI</>}
         </button>
         <button
           type="button"
@@ -1395,12 +1396,17 @@ const MergePrototypesDialog = ({
   </div>
 );
 
+const CHUNK_STATUS_ICONS = {
+  done: Check,
+  running: CircleDot,
+  failed: X,
+  skipped: Minus,
+  pending: Circle,
+};
+
 const chunkStatusIcon = (status) => {
-  if (status === "done") return "✓";
-  if (status === "running") return "◉";
-  if (status === "failed") return "✕";
-  if (status === "skipped") return "–";
-  return "○";
+  const Icon = CHUNK_STATUS_ICONS[status] || CHUNK_STATUS_ICONS.pending;
+  return <Icon size={14} strokeWidth={1.75} aria-hidden />;
 };
 
 const JobProgressPanel = ({ progress, chunks, mode = "generate" }) => {

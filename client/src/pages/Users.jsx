@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Users as UsersIcon } from "lucide-react";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
@@ -7,6 +8,8 @@ import Badge from "../components/Badge";
 import EmptyState from "../components/EmptyState";
 import ConfirmButton from "../components/ConfirmButton";
 import LlmAssignPicker from "../components/LlmAssignPicker";
+import Input from "../components/Input";
+import Button from "../components/Button";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -27,13 +30,6 @@ const roleBadgeColor = (roleName = "") => {
   return "muted";
 };
 
-const UsersIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-  </svg>
-);
-
 const llmSummary = (userLlms = [], roleLlms = []) => {
   if (userLlms.length > 0) return `${userLlms.length} custom`;
   if (roleLlms.length > 0) return `${roleLlms.length} from role`;
@@ -52,7 +48,7 @@ const Avatar = ({ first, last }) => {
   return (
     <span style={{
       width: 28, height: 28, borderRadius: 99, flexShrink: 0,
-      background: "var(--header-gradient)", color: "white",
+      background: "var(--accent)", color: "white",
       display: "inline-flex", alignItems: "center", justifyContent: "center",
       fontSize: 11, fontWeight: 700,
     }}>
@@ -191,25 +187,16 @@ const Users = () => {
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 15, color: "var(--text-primary)", margin: "0 0 16px" }}>
             {editingId ? "Edit User" : "Create User"}
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-            <div>
-              <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>First Name *</label>
-              <input style={inputStyle} value={firstName} onChange={(e) => setFirstName(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>Last Name</label>
-              <input style={inputStyle} value={lastName} onChange={(e) => setLastName(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>Email *</label>
-              <input type="email" style={inputStyle} value={email} onChange={(e) => setEmail(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>
-                Password {editingId ? "(leave blank to keep)" : "*"}
-              </label>
-              <input type="password" style={inputStyle} value={password} onChange={(e) => setPassword(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
-            </div>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2.5">
+            <Input label="First name *" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            <Input label="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            <Input label="Email *" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              label={editingId ? "Password (leave blank to keep)" : "Password *"}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, display: "block" }}>Role *</label>
               <select
@@ -234,26 +221,16 @@ const Users = () => {
               />
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-            <button
+          <div className="flex gap-2 mt-4">
+            <Button
               onClick={handleSubmit}
               disabled={saving || !firstName.trim() || !email.trim() || (!editingId && !password)}
-              style={{
-                padding: "9px 20px", borderRadius: "var(--radius)",
-                background: "var(--accent)", border: "none", color: "white",
-                fontWeight: 600, fontSize: 13,
-                opacity: (saving || !firstName.trim() || !email.trim() || (!editingId && !password)) ? 0.5 : 1,
-                cursor: (saving || !firstName.trim() || !email.trim() || (!editingId && !password)) ? "not-allowed" : "pointer",
-              }}
+              loading={saving}
             >
-              {saving ? "Saving…" : editingId ? "Update User" : "Create User"}
-            </button>
+              {saving ? "Saving…" : editingId ? "Update user" : "Create user"}
+            </Button>
             {editingId && (
-              <button onClick={resetForm} style={{
-                padding: "9px 16px", borderRadius: "var(--radius)",
-                background: "var(--bg-elevated)", border: "1px solid var(--border)",
-                color: "var(--text-secondary)", fontWeight: 500, fontSize: 13,
-              }}>Cancel</button>
+              <Button variant="secondary" onClick={resetForm}>Cancel</Button>
             )}
           </div>
         </div>
@@ -270,39 +247,35 @@ const Users = () => {
           </span>
         </div>
         {users.length === 0 ? (
-          <EmptyState icon={<UsersIcon />} message="No users found" hint="Create a user above to get started." />
+          <EmptyState icon={<UsersIcon size={20} strokeWidth={1.75} />} message="No users found" hint="Create a user above to get started." />
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="ba-table">
             <thead>
-              <tr style={{ background: "var(--bg-elevated)" }}>
+              <tr>
                 {["User", "Email", "Role", "AI Models", "Status", ""].map((h) => (
-                  <th key={h} style={{
-                    padding: "10px 16px", textAlign: "left", fontSize: 11,
-                    color: "var(--text-muted)", textTransform: "uppercase",
-                    letterSpacing: "0.7px", borderBottom: "1px solid var(--border)", fontWeight: 600,
-                  }}>{h}</th>
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {users.map((u, idx) => (
-                <tr key={u._id} style={{ borderBottom: "1px solid var(--border)", background: idx % 2 === 1 ? "var(--bg-elevated)" : "transparent" }}>
-                  <td style={{ padding: "10px 16px" }}>
+              {users.map((u) => (
+                <tr key={u._id}>
+                  <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <Avatar first={u.firstName} last={u.lastName} />
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
+                      <span style={{ fontWeight: 500, color: "var(--text-primary)" }}>
                         {u.firstName} {u.lastName}
                       </span>
                     </div>
                   </td>
-                  <td style={{ padding: "10px 16px", fontSize: 12, color: "var(--text-secondary)" }}>{u.email}</td>
-                  <td style={{ padding: "10px 16px" }}>
+                  <td style={{ fontSize: 12 }}>{u.email}</td>
+                  <td>
                     {u.role?.name ? <Badge color={roleBadgeColor(u.role.name)}>{u.role.name}</Badge> : <span style={{ color: "var(--text-muted)" }}>—</span>}
                   </td>
-                  <td style={{ padding: "10px 16px", fontSize: 12, color: "var(--text-secondary)" }}>
+                  <td style={{ fontSize: 12 }}>
                     {llmSummary(u.allowedLlms, u.role?.allowedLlms)}
                   </td>
-                  <td style={{ padding: "10px 16px" }}>
+                  <td>
                     <span
                       title={u.isActive ? "Active" : "Inactive"}
                       style={{
@@ -312,7 +285,7 @@ const Users = () => {
                       }}
                     />
                   </td>
-                  <td style={{ padding: "10px 16px" }}>
+                  <td>
                     <div style={{ display: "flex", gap: 6 }}>
                       {canUpdate && (
                         <>

@@ -1,11 +1,12 @@
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
+import { Check, Info, X } from "lucide-react";
 
 const ToastContext = createContext(null);
 
 const VARIANTS = {
-  success: { color: "var(--green)", soft: "var(--green-soft)", glyph: "✓" },
-  error: { color: "var(--red)", soft: "var(--red-soft)", glyph: "✕" },
-  info: { color: "var(--accent)", soft: "var(--accent-soft)", glyph: "ℹ" },
+  success: { color: "var(--green)", soft: "var(--green-soft)", Icon: Check },
+  error: { color: "var(--red)", soft: "var(--red-soft)", Icon: X },
+  info: { color: "var(--accent)", soft: "var(--accent-soft)", Icon: Info },
 };
 
 const DURATION = 2800;
@@ -34,6 +35,7 @@ export const ToastProvider = ({ children }) => {
       }}>
         {toasts.map((t) => {
           const v = VARIANTS[t.type] || VARIANTS.info;
+          const Icon = v.Icon;
           return (
             <div
               key={t.id}
@@ -49,9 +51,11 @@ export const ToastProvider = ({ children }) => {
             >
               <span style={{
                 width: 18, height: 18, borderRadius: 99, flexShrink: 0,
-                background: v.soft, color: v.color, fontSize: 11, fontWeight: 700,
+                background: v.soft, color: v.color,
                 display: "flex", alignItems: "center", justifyContent: "center",
-              }}>{v.glyph}</span>
+              }}>
+                <Icon size={12} strokeWidth={1.75} />
+              </span>
               <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.4 }}>
                 {t.message}
               </span>

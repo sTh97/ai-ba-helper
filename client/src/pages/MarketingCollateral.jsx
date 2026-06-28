@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
+import { Download, Sparkles, Sparkle } from "lucide-react";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
 import PageHeader from "../components/PageHeader";
 import ConfirmButton from "../components/ConfirmButton";
+import Button from "../components/Button";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -425,19 +427,16 @@ const MarketingCollateral = () => {
             )}
 
             {canCreate && stories.length > 0 && (
-              <button
+              <Button
                 onClick={openDialog}
                 disabled={generating || selectedCount === 0}
-                style={{
-                  padding: "10px 22px", borderRadius: "var(--radius)", border: "none",
-                  background: (generating || selectedCount === 0) ? "var(--bg-elevated)" : "var(--accent)",
-                  color: (generating || selectedCount === 0) ? "var(--text-muted)" : "white",
-                  fontWeight: 600, fontSize: 13,
-                  cursor: generating ? "wait" : selectedCount === 0 ? "not-allowed" : "pointer",
-                }}
+                icon={Sparkles}
+                iconSize={14}
               >
-                {generating ? "Generating…" : `✨ Create Collateral (${selectedCount} ${selectedCount === 1 ? "story" : "stories"})`}
-              </button>
+                {generating
+                  ? "Generating…"
+                  : `Create collateral (${selectedCount} ${selectedCount === 1 ? "story" : "stories"})`}
+              </Button>
             )}
 
             {selectedProjectId && stories.length === 0 && (
@@ -504,7 +503,7 @@ const MarketingCollateral = () => {
             position: "absolute", top: 14, right: 16,
             display: "inline-flex", alignItems: "center", gap: 4,
             fontSize: 11, fontWeight: 600, color: "var(--ai-accent)", letterSpacing: "0.3px",
-          }}><span aria-hidden>✦</span> AI Generated</span>
+          }}><Sparkle size={11} strokeWidth={1.75} aria-hidden /> AI Generated</span>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap", paddingTop: 8 }}>
             <div style={{ flex: 1, minWidth: 220 }}>
               <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -542,12 +541,15 @@ const MarketingCollateral = () => {
                 style={dialogBtnStyle("yellow", Boolean(downloading))}
                 title={f.hint}
               >
-                {downloading.startsWith(f.value) ? "Preparing…" : `⬇ ${f.label}`}
+                <span className="inline-flex items-center gap-1">
+                  {downloading.startsWith(f.value) ? "Preparing…" : <><Download size={14} strokeWidth={1.75} /> {f.label}</>}
+                </span>
               </button>
             ))}
             {canCreate && (
-              <button onClick={openRegenerate} style={dialogBtnStyle("accent")}>
-                ✨ Edit & Regenerate
+              <button onClick={openRegenerate} style={dialogBtnStyle("accent")} className="inline-flex items-center gap-1.5">
+                <Sparkles size={14} strokeWidth={1.75} aria-hidden />
+                Edit & regenerate
               </button>
             )}
           </div>
@@ -729,8 +731,9 @@ const CollateralDialog = ({
           onClick={onRefine}
           disabled={refining || generating || !vision.trim()}
           style={dialogBtnStyle("yellow", refining || generating || !vision.trim())}
+          className="inline-flex items-center gap-1.5"
         >
-          {refining ? "Refining…" : "✨ Refine with AI"}
+          {refining ? "Refining…" : <><Sparkles size={14} strokeWidth={1.75} aria-hidden /> Refine with AI</>}
         </button>
         <button
           type="button"

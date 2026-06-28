@@ -1,36 +1,20 @@
+import Button from "./Button";
+
 const EmptyState = ({ icon, message, hint, actionLabel, onAction }) => (
-  <div style={{
-    display: "flex", flexDirection: "column", alignItems: "center",
-    justifyContent: "center", textAlign: "center", padding: "48px 24px", gap: 12,
-  }}>
+  <div className="flex flex-col items-center justify-center text-center py-12 px-6 gap-3">
     {icon && (
-      <div style={{
-        width: 48, height: 48, borderRadius: "var(--radius)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        background: "var(--bg-elevated)", color: "var(--text-muted)",
-      }}>
+      <div className="w-12 h-12 rounded flex items-center justify-center bg-elevated text-muted">
         {icon}
       </div>
     )}
     <div>
-      <div style={{ fontSize: 15, fontWeight: 500, color: "var(--text-secondary)" }}>
-        {message}
-      </div>
-      {hint && (
-        <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{hint}</div>
-      )}
+      <div className="text-[15px] font-medium text-secondary">{message}</div>
+      {hint && <div className="text-[13px] text-muted mt-1">{hint}</div>}
     </div>
     {actionLabel && onAction && (
-      <button
-        onClick={onAction}
-        style={{
-          marginTop: 4, padding: "9px 18px", borderRadius: "var(--radius)",
-          background: "var(--accent)", border: "none", color: "white",
-          fontWeight: 600, fontSize: 13, cursor: "pointer",
-        }}
-      >
+      <Button onClick={onAction} className="mt-1">
         {actionLabel}
-      </button>
+      </Button>
     )}
   </div>
 );

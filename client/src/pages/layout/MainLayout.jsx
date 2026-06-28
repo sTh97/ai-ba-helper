@@ -1,16 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Folder,
+  Layers,
+  LayoutGrid,
+  List,
+  Megaphone,
+  Moon,
+  PenLine,
+  Shield,
+  Sun,
+  Users,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { useTheme, THEMES } from "../../context/ThemeContext";
+import { useTheme } from "../../context/ThemeContext";
 import { useLLM, getTierStyle } from "../../context/LLMContext";
 import ChangePasswordModal from "../../components/ChangePasswordModal";
-
-const THEME_SWATCHES = {
-  dark: ["#0a0b0f", "#4f8ef7"],
-  light: ["#f4f6fa", "#3b6fd4"],
-  alien: ["#030612", "#39ff14"],
-};
-
+import LogoMark from "../../components/LogoMark";
 
 const TierBadge = ({ tier, tierLabel }) => {
   const style = getTierStyle(tier);
@@ -47,33 +57,15 @@ const roleBadgeColor = (roleName = "") => {
   return "var(--text-secondary)";
 };
 
-const LogoMark = ({ size = 28 }) => (
-  <div style={{
-    width: size, height: size, borderRadius: 8,
-    background: "var(--header-gradient)",
-    display: "flex", alignItems: "center", justifyContent: "center",
-  }}>
-    <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 18 18" fill="none">
-      {[0, 1].map((row) =>
-        [0, 1, 2].map((col) => {
-          const highlighted = row === 0 && col === 2;
-          return (
-            <rect
-              key={`${row}-${col}`}
-              x={col * 6 + 1} y={row * 8 + 1}
-              width={4} height={6} rx={1}
-              fill={highlighted ? "#fff" : "rgba(255,255,255,0.45)"}
-            />
-          );
-        })
-      )}
-    </svg>
-  </div>
+const LogoMarkHeader = ({ size = 28 }) => <LogoMark size={size} />;
+
+const NavIcon = ({ icon: Icon }) => (
+  <Icon size={15} strokeWidth={1.75} className="shrink-0 opacity-85" />
 );
 
 const MainLayout = () => {
   const { user, logout, hasPermission } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { configuredModels, selectedModel, selectedId, setSelectedId, loading: llmLoading } = useLLM();
   const modelDisplayLabel = selectedModel?.label
     || (selectedId ? selectedId.replace(/^[^:]+:/, "").replace(/-/g, " ") : "Not configured");
@@ -82,7 +74,6 @@ const MainLayout = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [collapsed, setCollapsed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showLLMMenu, setShowLLMMenu] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1400);
@@ -107,7 +98,6 @@ const MainLayout = () => {
     const handleClickOutside = (e) => {
       if (headerRef.current && !headerRef.current.contains(e.target)) {
         setShowMenu(false);
-        setShowThemeMenu(false);
         setShowLLMMenu(false);
       }
     };
@@ -119,30 +109,30 @@ const MainLayout = () => {
     {
       label: "Workspace",
       items: [
-        { to: "/dashboard", icon: DashIcon, label: "Dashboard", module: "dashboard" },
-        { to: "/add-project", icon: ProjectIcon, label: "Projects", module: "projects" },
+        { to: "/dashboard", icon: LayoutGrid, label: "Dashboard", module: "dashboard" },
+        { to: "/add-project", icon: Folder, label: "Projects", module: "projects" },
       ],
     },
     {
       label: "Content",
       items: [
-        { to: "/add-user-story", icon: EditIcon, label: "Add Story", module: "stories", action: "create" },
-        { to: "/user-stories", icon: ListIcon, label: "User Stories", module: "stories" },
-        { to: "/create-application", icon: AppIcon, label: "Create Application", module: "applications" },
+        { to: "/add-user-story", icon: PenLine, label: "Add Story", module: "stories", action: "create" },
+        { to: "/user-stories", icon: List, label: "User Stories", module: "stories" },
+        { to: "/create-application", icon: LayoutGrid, label: "Create Application", module: "applications" },
       ],
     },
     {
       label: "Strategy",
       items: [
-        { to: "/marketing-collateral", icon: MegaphoneIcon, label: "Marketing Collateral", module: "marketing" },
-        { to: "/solution-architecture", icon: ArchitectureIcon, label: "Solution Architecture", module: "solution" },
+        { to: "/marketing-collateral", icon: Megaphone, label: "Marketing Collateral", module: "marketing" },
+        { to: "/solution-architecture", icon: Layers, label: "Solution Architecture", module: "solution" },
       ],
     },
     {
       label: "Admin",
       items: [
-        { to: "/roles", icon: ShieldIcon, label: "Roles", module: "roles" },
-        { to: "/users", icon: UsersIcon, label: "Users", module: "users" },
+        { to: "/roles", icon: Shield, label: "Roles", module: "roles" },
+        { to: "/users", icon: Users, label: "Users", module: "users" },
       ],
     },
   ]
@@ -176,7 +166,7 @@ const MainLayout = () => {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <LogoMark />
+            <LogoMarkHeader />
             <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 15, color: "var(--text-primary)", letterSpacing: "-0.3px" }}>
               Requify
             </span>
@@ -195,7 +185,7 @@ const MainLayout = () => {
           {isMobile && selectedModel && (
             <button
               type="button"
-              onClick={() => { setShowLLMMenu((s) => !s); setShowMenu(false); setShowThemeMenu(false); }}
+              onClick={() => { setShowLLMMenu((s) => !s); setShowMenu(false); }}
               style={{
                 padding: "4px 8px", borderRadius: 99, maxWidth: 140,
                 background: "var(--bg-elevated)", border: "1px solid var(--border)",
@@ -216,62 +206,19 @@ const MainLayout = () => {
             </div>
           )}
 
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => { setShowThemeMenu((s) => !s); setShowMenu(false); }}
-              title="Change theme"
-              style={{
-                width: 32, height: 32, borderRadius: 8,
-                border: "1px solid var(--border)", cursor: "pointer",
-                background: "var(--bg-elevated)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "var(--text-secondary)", fontSize: 15,
-              }}
-            >
-              {THEMES[theme]?.icon || "🌙"}
-            </button>
-            {showThemeMenu && (
-              <div style={{
-                position: "absolute", top: 40, right: 0, minWidth: 180,
-                background: "var(--bg-surface)", border: "1px solid var(--border)",
-                borderRadius: "var(--radius)", padding: "6px 0",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 100,
-              }}>
-                <div style={{ padding: "6px 14px 8px", fontSize: 11, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  Theme
-                </div>
-                {Object.entries(THEMES).map(([key, { label, icon }]) => (
-                  <button
-                    key={key}
-                    onClick={() => { setTheme(key); setShowThemeMenu(false); }}
-                    style={{
-                      width: "100%", padding: "8px 14px", background: theme === key ? "var(--accent-soft)" : "none",
-                      border: "none", cursor: "pointer", textAlign: "left",
-                      display: "flex", alignItems: "center", gap: 10,
-                      color: theme === key ? "var(--accent)" : "var(--text-primary)", fontSize: 13,
-                    }}
-                  >
-                    <span style={{ display: "flex", gap: 2 }}>
-                      {THEME_SWATCHES[key].map((c) => (
-                        <span key={c} style={{ width: 10, height: 10, borderRadius: 99, background: c, border: "1px solid var(--border)" }} />
-                      ))}
-                    </span>
-                    <span>{icon} {label}</span>
-                    {theme === key && <span style={{ marginLeft: "auto", fontSize: 11 }}>✓</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="w-8 h-8 rounded-lg border border-border cursor-pointer bg-elevated flex items-center justify-center text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {theme === "dark" ? <Moon size={18} strokeWidth={1.75} /> : <Sun size={18} strokeWidth={1.75} />}
+          </button>
 
           <button
-            onClick={() => { setShowMenu((s) => !s); setShowThemeMenu(false); }}
-            style={{
-              width: 30, height: 30, borderRadius: 99, border: "none", cursor: "pointer",
-              background: "var(--header-gradient)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 700, color: "white",
-            }}
+            onClick={() => setShowMenu((s) => !s)}
+            className="w-[30px] h-[30px] rounded-full border-none cursor-pointer bg-accent flex items-center justify-center text-xs font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {initials}
           </button>
@@ -392,9 +339,8 @@ const MainLayout = () => {
                   color: "var(--text-muted)", cursor: "pointer",
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  {collapsed ? <path d="M9 18l6-6-6-6"/> : <path d="M15 18l-6-6 6-6"/>}
-                </svg>
+                <ChevronRight size={14} strokeWidth={2} className={collapsed ? "" : "hidden"} />
+                <ChevronLeft size={14} strokeWidth={2} className={collapsed ? "hidden" : ""} />
               </button>
             )}
 
@@ -434,7 +380,7 @@ const MainLayout = () => {
                         if (e.currentTarget.getAttribute("aria-current") !== "page") e.currentTarget.style.background = "transparent";
                       }}
                     >
-                      <span style={{ flexShrink: 0, opacity: 0.85, display: "flex" }}><Icon /></span>
+                      <NavIcon icon={Icon} />
                       {!sidebarCollapsed && <span>{label}</span>}
                     </NavLink>
                   ))}
@@ -484,9 +430,12 @@ const MainLayout = () => {
                   </div>
                 )}
                 {!sidebarCollapsed && (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ flexShrink: 0, transform: showLLMMenu ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
-                    <path d="M6 9l6 6 6-6"/>
-                  </svg>
+                  <ChevronDown
+                    size={12}
+                    strokeWidth={2}
+                    className="shrink-0 text-muted transition-transform duration-150"
+                    style={{ transform: showLLMMenu ? "rotate(180deg)" : "none" }}
+                  />
                 )}
               </button>
 
@@ -536,7 +485,7 @@ const MainLayout = () => {
                             {model.label}
                           </span>
                           <TierBadge tier={model.tier} tierLabel={model.tierLabel} />
-                          {active && <span style={{ fontSize: 11, color: "var(--accent)" }}>✓</span>}
+                          {active && <Check size={14} strokeWidth={1.75} className="text-accent" />}
                         </div>
                         <div style={{ fontSize: 10, color: "var(--text-muted)", lineHeight: 1.35, marginBottom: 2 }}>
                           {model.description}
@@ -578,7 +527,7 @@ const MainLayout = () => {
                 color: isActive ? "var(--accent)" : "var(--text-muted)",
               })}
             >
-              <Icon />
+              <NavIcon icon={Icon} />
               <span>{label}</span>
             </NavLink>
           ))}
@@ -587,57 +536,5 @@ const MainLayout = () => {
     </div>
   );
 };
-
-const DashIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-    <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-  </svg>
-);
-const ProjectIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-  </svg>
-);
-const EditIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-  </svg>
-);
-const ListIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
-    <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
-    <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-  </svg>
-);
-const AppIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-  </svg>
-);
-const MegaphoneIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
-  </svg>
-);
-const ArchitectureIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-  </svg>
-);
-const ShieldIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-  </svg>
-);
-const UsersIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-  </svg>
-);
 
 export default MainLayout;

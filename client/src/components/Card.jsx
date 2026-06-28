@@ -1,3 +1,5 @@
+import { Sparkle } from "lucide-react";
+
 const Card = ({ children, variant = "default", padding = "22px 24px", aiLabel = "AI Generated", style }) => {
   const isAi = variant === "ai";
   const base = {
@@ -26,7 +28,7 @@ const Card = ({ children, variant = "default", padding = "22px 24px", aiLabel = 
           fontSize: 11, fontWeight: 600, color: "var(--ai-accent)",
           letterSpacing: "0.3px",
         }}>
-          <span aria-hidden>✦</span> {aiLabel}
+          <Sparkle size={11} strokeWidth={1.75} aria-hidden /> {aiLabel}
         </span>
       )}
       {children}

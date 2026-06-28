@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Check, LayoutGrid, XCircle } from "lucide-react";
 import axios from "../../api/axiosInstance";
 
 const inputStyle = {
@@ -163,7 +164,7 @@ const UIWireframeGenerator = ({
         display: "flex", alignItems: "center", gap: 8,
         background: "var(--bg-elevated)",
       }}>
-        <span style={{ fontSize: 14 }}>🧩</span>
+        <LayoutGrid size={18} strokeWidth={1.75} className="text-secondary" />
         <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
           Generated Wireframe
         </span>
@@ -198,7 +199,7 @@ const UIWireframeGenerator = ({
             background: "var(--bg-base)", border: "1px dashed var(--border)",
             borderRadius: "var(--radius)",
           }}>
-            <div style={{ fontSize: 28, marginBottom: 10, opacity: 0.5 }}>🚫</div>
+            <XCircle size={28} strokeWidth={1.75} className="mx-auto mb-2.5 opacity-50 text-muted" />
             <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4 }}>
               Preview Not Applicable
             </div>
@@ -311,7 +312,8 @@ const UIWireframeGenerator = ({
                     color: copied ? "var(--green)" : "var(--text-secondary)",
                     fontSize: 11, fontWeight: 500, cursor: "pointer",
                   }}
-                >{copied ? "✓ Copied" : "Copy Full HTML"}</button>
+                className="inline-flex items-center gap-1.5"
+                >{copied ? <><Check size={14} strokeWidth={1.75} /> Copied</> : "Copy full HTML"}</button>
               </div>
             )}
           </>

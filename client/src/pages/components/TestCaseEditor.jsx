@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Sparkle, X } from "lucide-react";
 
 const countOf = (v) => (Array.isArray(v) ? v.length : v ? 1 : 0);
 
@@ -158,7 +159,7 @@ const TestCaseEditor = ({
             <button
               onClick={() => deleteItem(key, idx)}
               style={{ marginTop: 8, background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14, flexShrink: 0 }}
-            >✕</button>
+            > <X size={14} strokeWidth={1.75} /></button>
           </div>
         ))}
         <button
@@ -187,14 +188,15 @@ const TestCaseEditor = ({
         display: "flex", alignItems: "center", gap: 8,
         background: "var(--ai-soft)",
       }}>
-        <span style={{ color: "var(--ai-accent)", fontSize: 13 }}>✦</span>
+        <Sparkle size={13} strokeWidth={1.75} className="text-ai" />
         <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
           {displayTitle}
         </span>
         <span style={{
           marginLeft: "auto", fontSize: 11, padding: "2px 8px",
           background: "var(--ai-soft)", borderRadius: 99, color: "var(--ai-accent)", fontWeight: 600,
-        }}>✦ AI Generated</span>
+          display: "inline-flex", alignItems: "center", gap: 4,
+        }}><Sparkle size={11} strokeWidth={1.75} aria-hidden /> AI Generated</span>
       </div>
 
       <div style={{ padding: "20px" }}>
@@ -236,7 +238,7 @@ const TestCaseEditor = ({
                 <button
                   onClick={() => deleteItem("acceptanceCriteria", index)}
                   style={{ marginTop: 6, background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14, padding: "2px 4px", flexShrink: 0 }}
-                >✕</button>
+                > <X size={14} strokeWidth={1.75} /></button>
               </div>
             ))}
             <button
@@ -299,7 +301,7 @@ const TestCaseEditor = ({
                 <button
                   onClick={() => removeField(index)}
                   style={{ marginTop: 6, background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14, padding: "2px 4px", flexShrink: 0 }}
-                >✕</button>
+                > <X size={14} strokeWidth={1.75} /></button>
               </div>
             ))}
             <datalist id="field-type-options">
@@ -450,7 +452,7 @@ const ListEditor = ({ items, onChange, onRemove, onAdd, addLabel, placeholder })
         <button
           onClick={() => onRemove(index)}
           style={{ marginTop: 8, background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14, padding: "2px 4px", flexShrink: 0 }}
-        >✕</button>
+        > <X size={14} strokeWidth={1.75} /></button>
       </div>
     ))}
     <button

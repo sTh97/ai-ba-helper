@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Shield } from "lucide-react";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
@@ -7,6 +8,8 @@ import Badge from "../components/Badge";
 import EmptyState from "../components/EmptyState";
 import ConfirmButton from "../components/ConfirmButton";
 import LlmAssignPicker from "../components/LlmAssignPicker";
+import Input from "../components/Input";
+import Button from "../components/Button";
 
 const inputStyle = {
   width: "100%", padding: "10px 14px",
@@ -22,12 +25,6 @@ const focusOff = (e) => (e.target.style.borderColor = "var(--border)");
 const emptyPermission = (module) => ({
   module, create: false, read: false, update: false, delete: false, dataAccess: "own",
 });
-
-const ShieldIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-  </svg>
-);
 
 const countPerms = (perms = []) =>
   perms.reduce((acc, p) => acc + ["create", "read", "update", "delete"].filter((a) => p[a]).length, 0);
@@ -141,12 +138,6 @@ const Roles = () => {
 
   const moduleLabel = (key) => modules.find((m) => m.key === key)?.label || key;
 
-  const colHead = {
-    padding: "8px 12px", textAlign: "left", fontSize: 11,
-    color: "var(--text-muted)", textTransform: "uppercase",
-    letterSpacing: "0.6px", fontWeight: 600, borderBottom: "1px solid var(--border)",
-  };
-
   return (
     <div className="ba-page" style={{ maxWidth: 960, margin: "0 auto" }}>
       <PageHeader
@@ -163,27 +154,27 @@ const Roles = () => {
             {editingId ? "Edit Role" : "Create Role"}
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-            <input style={inputStyle} placeholder="Role name *" value={name} onChange={(e) => setName(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
-            <input style={inputStyle} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} onFocus={focusOn} onBlur={focusOff} />
+            <Input placeholder="Role name *" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
 
           <div style={{ overflowX: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <table className="ba-table">
               <thead>
-                <tr style={{ background: "var(--bg-elevated)" }}>
+                <tr>
                   {["Module", "Create", "Read", "Update", "Delete", "Data Access"].map((h) => (
-                    <th key={h} style={colHead}>{h}</th>
+                    <th key={h}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {permissions.map((perm, idx) => (
-                  <tr key={perm.module} style={{ borderBottom: "1px solid var(--border)", background: idx % 2 === 1 ? "var(--bg-elevated)" : "transparent" }}>
-                    <td style={{ padding: "9px 12px", color: "var(--text-primary)", fontWeight: 500 }}>
+                {permissions.map((perm) => (
+                  <tr key={perm.module}>
+                    <td style={{ color: "var(--text-primary)", fontWeight: 500 }}>
                       {moduleLabel(perm.module)}
                     </td>
                     {["create", "read", "update", "delete"].map((action) => (
-                      <td key={action} style={{ padding: "9px 12px" }}>
+                      <td key={action}>
                         <input
                           type="checkbox"
                           className="ba-check"
@@ -192,7 +183,7 @@ const Roles = () => {
                         />
                       </td>
                     ))}
-                    <td style={{ padding: "9px 12px" }}>
+                    <td>
                       <select
                         value={perm.dataAccess}
                         onChange={(e) => setDataAccess(perm.module, e.target.value)}
@@ -218,25 +209,12 @@ const Roles = () => {
             />
           </div>
 
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-            <button
-              onClick={handleSubmit}
-              disabled={saving || !name.trim()}
-              style={{
-                padding: "9px 20px", borderRadius: "var(--radius)",
-                background: "var(--accent)", border: "none", color: "white",
-                fontWeight: 600, fontSize: 13, opacity: (saving || !name.trim()) ? 0.5 : 1,
-                cursor: (saving || !name.trim()) ? "not-allowed" : "pointer",
-              }}
-            >
-              {saving ? "Saving…" : editingId ? "Update Role" : "Create Role"}
-            </button>
+          <div className="flex gap-2 mt-4">
+            <Button onClick={handleSubmit} disabled={saving || !name.trim()} loading={saving}>
+              {saving ? "Saving…" : editingId ? "Update role" : "Create role"}
+            </Button>
             {editingId && (
-              <button onClick={resetForm} style={{
-                padding: "9px 16px", borderRadius: "var(--radius)",
-                background: "var(--bg-elevated)", border: "1px solid var(--border)",
-                color: "var(--text-secondary)", fontWeight: 500, fontSize: 13,
-              }}>Cancel</button>
+              <Button variant="secondary" onClick={resetForm}>Cancel</Button>
             )}
           </div>
         </div>
@@ -256,7 +234,7 @@ const Roles = () => {
         </div>
 
         {roles.length === 0 ? (
-          <EmptyState icon={<ShieldIcon />} message="No roles found" hint="Create a role above to define permissions." />
+          <EmptyState icon={<Shield size={20} strokeWidth={1.75} />} message="No roles found" hint="Create a role above to define permissions." />
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
             {roles.map((role) => (
